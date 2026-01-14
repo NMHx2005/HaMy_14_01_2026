@@ -89,10 +89,17 @@ const extendBorrowRequestValidator = [
         .withMessage('Vui lòng nhập ngày hẹn trả mới')
         .isDate()
         .withMessage('Ngày hẹn trả không hợp lệ')
-        .custom((value, { req }) => {
-            if (new Date(value) <= new Date()) {
+        .custom((value) => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const newDueDate = new Date(value);
+            newDueDate.setHours(0, 0, 0, 0);
+            
+            // Ngày hạn mới phải sau ngày hiện tại
+            if (newDueDate <= today) {
                 throw new Error('Ngày hẹn trả mới phải sau ngày hiện tại');
             }
+            
             return true;
         }),
 

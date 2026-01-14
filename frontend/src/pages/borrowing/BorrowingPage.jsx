@@ -76,6 +76,7 @@ const BorrowingPage = () => {
 
     // Modal states
     const [selectedRequest, setSelectedRequest] = useState(null);
+    const [extendRequestId, setExtendRequestId] = useState(null); // Lưu ID riêng cho extend
     const [detailModalOpen, setDetailModalOpen] = useState(false);
     const [createModalOpen, setCreateModalOpen] = useState(false);
     const [extendModalOpen, setExtendModalOpen] = useState(false);
@@ -235,23 +236,59 @@ const BorrowingPage = () => {
      */
     const handleExtend = async (request) => {
         try {
+            setActionLoading(true);
             const response = await getBorrowRequestById(request.id);
-            setSelectedRequest(response.data);
+            // Response có thể là { success, data } hoặc data trực tiếp
+            const requestData = response?.data || response;
+            setSelectedRequest(requestData);
+            setExtendRequestId(request.id); // Lưu ID để dùng khi confirm
             setExtendModalOpen(true);
-        } catch {
+        } catch (error) {
+            console.error('Load borrow request error:', error);
             toast.error('Không thể tải thông tin phiếu mượn');
+        } finally {
+            setActionLoading(false);
         }
     };
 
     const handleExtendConfirm = async (newDueDate, notes) => {
+        // Kiểm tra requestId trước khi gọi API
+        if (!extendRequestId) {
+            toast.error('Không tìm thấy thông tin phiếu mượn');
+            setExtendModalOpen(false);
+            return;
+        }
+
         try {
             setActionLoading(true);
-            await extendBorrowRequest(selectedRequest.id, newDueDate, notes);
+            await extendBorrowRequest(extendRequestId, newDueDate, notes);
             toast.success('Gia hạn phiếu mượn thành công');
             setExtendModalOpen(false);
+            setExtendRequestId(null);
+            setSelectedRequest(null);
             fetchData();
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Lỗi gia hạn phiếu');
+            console.error('Extend borrow error:', error);
+            
+            // Xử lý lỗi chi tiết
+            const errorData = error.response?.data;
+            
+            // Nếu có mảng errors (validation errors)
+            if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+                // Hiển thị từng lỗi validation
+                errorData.errors.forEach((err, index) => {
+                    const fieldName = err.field || 'Dữ liệu';
+                    const message = err.message || 'Không hợp lệ';
+                    toast.error(`${fieldName}: ${message}`, {
+                        duration: 4000,
+                        id: `extend-error-${index}` // Tránh duplicate toast
+                    });
+                });
+            } else {
+                // Hiển thị message chính
+                const errorMessage = errorData?.message || error.message || 'Lỗi gia hạn phiếu mượn. Vui lòng thử lại.';
+                toast.error(errorMessage, { duration: 5000 });
+            }
         } finally {
             setActionLoading(false);
         }
@@ -572,7 +609,11 @@ const BorrowingPage = () => {
             {/* Extend Modal */}
             <ExtendModal
                 isOpen={extendModalOpen}
-                onClose={() => setExtendModalOpen(false)}
+                onClose={() => {
+                    setExtendModalOpen(false);
+                    setExtendRequestId(null);
+                    setSelectedRequest(null);
+                }}
                 onConfirm={handleExtendConfirm}
                 borrowRequest={selectedRequest}
                 loading={actionLoading}

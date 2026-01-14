@@ -564,6 +564,23 @@ const extendBorrowRequest = asyncHandler(async (req, res) => {
 
     const { new_due_date, notes } = req.body;
 
+    // Validate: ngày hạn mới phải sau ngày hạn hiện tại
+    const currentDueDate = new Date(borrowRequest.due_date);
+    const newDueDate = new Date(new_due_date);
+    
+    if (newDueDate <= currentDueDate) {
+        throw new AppError('Ngày hẹn trả mới phải sau ngày hạn hiện tại', 400);
+    }
+
+    // Validate: ngày hạn mới phải sau ngày hiện tại
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    newDueDate.setHours(0, 0, 0, 0);
+    
+    if (newDueDate <= today) {
+        throw new AppError('Ngày hẹn trả mới phải sau ngày hiện tại', 400);
+    }
+
     await borrowRequest.update({
         due_date: new_due_date,
         status: 'borrowed', // Chuyển về borrowed nếu đang overdue
