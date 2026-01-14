@@ -70,9 +70,11 @@ api.interceptors.response.use(
                 }
             }
 
-            // Trả về lỗi với message từ server
-            const message = response.data?.message || 'Đã có lỗi xảy ra';
-            return Promise.reject(new Error(message));
+            // Giữ nguyên error object để có thể truy cập response.data.errors
+            // Tạo error mới nhưng giữ nguyên response
+            const enhancedError = new Error(response.data?.message || 'Đã có lỗi xảy ra');
+            enhancedError.response = response; // Giữ nguyên response để truy cập errors
+            return Promise.reject(enhancedError);
         }
 
         // Lỗi network hoặc timeout

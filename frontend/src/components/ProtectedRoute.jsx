@@ -17,7 +17,7 @@ import { useAuth } from '../contexts/AuthContext';
  * @param {string|string[]} props.roles - Roles được phép truy cập (optional)
  */
 const ProtectedRoute = ({ children, roles }) => {
-    const { isAuthenticated, loading, hasRole } = useAuth();
+    const { isAuthenticated, loading, hasRole, user } = useAuth();
     const location = useLocation();
 
     // Hiển thị loading khi đang kiểm tra auth
@@ -41,6 +41,13 @@ const ProtectedRoute = ({ children, roles }) => {
 
     // Kiểm tra role nếu được chỉ định
     if (roles && !hasRole(roles)) {
+        // Debug log để xem vấn đề
+        console.log('ProtectedRoute: Role check failed', {
+            requiredRoles: roles,
+            userRole: user?.role,
+            hasRole: hasRole(roles),
+            user: user
+        });
         // Không có quyền -> redirect về trang chủ hoặc 403
         return <Navigate to="/unauthorized" replace />;
     }

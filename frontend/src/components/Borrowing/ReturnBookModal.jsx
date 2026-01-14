@@ -4,29 +4,42 @@
  * ===================================================================
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Modal from '../Modal';
 import { HiOutlineBookOpen, HiOutlineCheck } from 'react-icons/hi';
 
 const ReturnBookModal = ({ isOpen, onClose, onConfirm, borrowRequest, loading = false }) => {
-    const [returnItems, setReturnItems] = useState([]);
-
-    // Initialize return items when modal opens
-    useEffect(() => {
-        if (borrowRequest?.details) {
-            const unreturned = borrowRequest.details
-                .filter(d => !d.actual_return_date)
-                .map(d => ({
-                    book_copy_id: d.book_copy_id,
-                    bookTitle: d.bookCopy?.bookEdition?.book?.title || 'Sách không rõ',
-                    bookCode: d.bookCopy?.bookEdition?.book?.code || '',
-                    selected: true,
-                    return_condition: 'good',
-                    notes: ''
-                }));
-            setReturnItems(unreturned);
-        }
+    // Tính toán initial items từ borrowRequest - dependency là borrowRequest để khớp với React Compiler
+    const initialItems = useMemo(() => {
+        if (!borrowRequest?.details) return [];
+        return borrowRequest.details
+            .filter(d => !d.actual_return_date)
+            .map(d => ({
+                book_copy_id: d.book_copy_id,
+                bookTitle: d.bookCopy?.bookEdition?.book?.title || 'Sách không rõ',
+                bookCode: d.bookCopy?.bookEdition?.book?.code || '',
+                selected: true,
+                return_condition: 'normal', // Sửa từ 'good' thành 'normal' để khớp với backend
+                notes: ''
+            }));
     }, [borrowRequest]);
+
+    const prevRequestIdRef = useRef(null);
+    const [returnItems, setReturnItems] = useState(() => initialItems);
+
+    // Reset state khi modal mở với borrowRequest mới
+    // Note: setState trong useEffect là cần thiết để sync state khi props thay đổi
+    useEffect(() => {
+        const currentRequestId = borrowRequest?.id;
+        if (isOpen && currentRequestId !== prevRequestIdRef.current) {
+            prevRequestIdRef.current = currentRequestId;
+            setReturnItems(initialItems);
+        } else if (!isOpen) {
+            prevRequestIdRef.current = null;
+            setReturnItems([]);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, borrowRequest?.id, initialItems]);
 
     const handleToggleItem = (bookCopyId) => {
         setReturnItems(prev => prev.map(item =>
@@ -66,7 +79,7 @@ const ReturnBookModal = ({ isOpen, onClose, onConfirm, borrowRequest, loading = 
     };
 
     const conditionOptions = [
-        { value: 'good', label: 'Bình thường', color: 'bg-green-100 text-green-800' },
+        { value: 'normal', label: 'Bình thường', color: 'bg-green-100 text-green-800' },
         { value: 'damaged', label: 'Hư hỏng', color: 'bg-yellow-100 text-yellow-800' },
         { value: 'lost', label: 'Mất sách', color: 'bg-red-100 text-red-800' }
     ];
@@ -130,7 +143,7 @@ const ReturnBookModal = ({ isOpen, onClose, onConfirm, borrowRequest, loading = 
                                                         ))}
                                                     </div>
 
-                                                    {item.return_condition !== 'good' && (
+                                                    {item.return_condition !== 'normal' && (
                                                         <input
                                                             type="text"
                                                             value={item.notes}

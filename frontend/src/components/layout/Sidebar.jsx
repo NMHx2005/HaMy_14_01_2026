@@ -52,7 +52,6 @@ const Sidebar = () => {
      * - Mượn & Trả (y=226)
      * - Sách (y=294)
      * - Thành viên (y=362)
-     * - Điều hành (y=430)
      */
     const staffMenuItems = [
         {
@@ -76,11 +75,6 @@ const Sidebar = () => {
             label: 'Thành viên',
         },
         {
-            path: '/operations',
-            icon: HiOutlineOfficeBuilding,
-            label: 'Điều hành',
-        },
-        {
             path: '/notifications',
             icon: HiOutlineBell,
             label: 'Thông báo',
@@ -96,6 +90,11 @@ const Sidebar = () => {
      * Menu items chỉ dành cho Admin
      */
     const adminOnlyItems = [
+        {
+            path: '/operations',
+            icon: HiOutlineOfficeBuilding,
+            label: 'Điều hành',
+        },
         {
             path: '/finance',
             icon: HiOutlineCurrencyDollar,

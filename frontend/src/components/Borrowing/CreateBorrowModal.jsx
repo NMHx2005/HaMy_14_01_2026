@@ -173,7 +173,26 @@ const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
             handleClose();
         } catch (error) {
             console.error('Create borrow error:', error);
-            toast.error(error.response?.data?.message || 'Lỗi tạo phiếu mượn');
+            
+            // Xử lý lỗi chi tiết
+            const errorData = error.response?.data;
+            
+            // Nếu có mảng errors (validation errors)
+            if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+                // Hiển thị từng lỗi validation
+                errorData.errors.forEach((err, index) => {
+                    const fieldName = err.field || 'Dữ liệu';
+                    const message = err.message || 'Không hợp lệ';
+                    toast.error(`${fieldName}: ${message}`, {
+                        duration: 4000,
+                        id: `borrow-error-${index}` // Tránh duplicate toast
+                    });
+                });
+            } else {
+                // Hiển thị message chính
+                const errorMessage = errorData?.message || error.message || 'Lỗi tạo phiếu mượn. Vui lòng thử lại.';
+                toast.error(errorMessage, { duration: 5000 });
+            }
         } finally {
             setSubmitting(false);
         }

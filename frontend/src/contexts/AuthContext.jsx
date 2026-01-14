@@ -42,17 +42,22 @@ export const AuthProvider = ({ children }) => {
                     const account = response.data || response;
 
                     // Normalize user object để giống với login response
+                    // Đảm bảo role luôn là lowercase để khớp với hasRole check
+                    const rawRole = account.userGroup?.name || account.role || 'reader';
+                    const normalizedRole = typeof rawRole === 'string' ? rawRole.toLowerCase() : 'reader';
+
                     const normalizedUser = {
                         id: account.id,
                         username: account.username,
                         email: account.email,
-                        role: account.userGroup?.name || account.role || 'reader',
+                        role: normalizedRole,
                         groupId: account.group_id,
                         staff: account.staff,
                         reader: account.reader
                     };
 
                     console.log('Loaded user from API:', normalizedUser); // Debug log
+                    console.log('Raw role from API:', rawRole, 'Normalized:', normalizedRole); // Debug log
                     setUser(normalizedUser);
                     setIsAuthenticated(true);
                     // Cập nhật localStorage để đồng bộ
@@ -81,12 +86,25 @@ export const AuthProvider = ({ children }) => {
     const login = useCallback(async (username, password) => {
         const response = await loginApi(username, password);
 
+        // Normalize user object - đảm bảo role là lowercase
+        const rawUser = response.data.user;
+        const rawRole = rawUser.role || rawUser.userGroup?.name || 'reader';
+        const normalizedRole = typeof rawRole === 'string' ? rawRole.toLowerCase() : 'reader';
+
+        const normalizedUser = {
+            ...rawUser,
+            role: normalizedRole
+        };
+
+        console.log('Login response user:', rawUser); // Debug log
+        console.log('Normalized user:', normalizedUser); // Debug log
+
         // Lưu token và user info vào localStorage
         localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('user', JSON.stringify(normalizedUser));
 
         // Cập nhật state
-        setUser(response.data.user);
+        setUser(normalizedUser);
         setIsAuthenticated(true);
 
         return response;

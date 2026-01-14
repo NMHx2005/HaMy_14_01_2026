@@ -59,12 +59,12 @@ const MainLayout = () => {
 
             {/* ===== MAIN CONTENT AREA ===== */}
             {/* margin-left: 16rem (256px) để khớp với sidebar width */}
-            <div style={{ marginLeft: '16rem' }} className="min-h-screen">
+            <div style={{ marginLeft: '16rem' }} className="min-h-screen w-[calc(100%-16rem)] overflow-x-hidden">
                 {/* Header */}
                 <Header title={getPageTitle()} />
 
                 {/* Page Content */}
-                <main className="p-6">
+                <main className="p-4 lg:p-6 w-full max-w-full overflow-x-hidden">
                     {/* Outlet sẽ render component của route hiện tại */}
                     <Outlet />
                 </main>

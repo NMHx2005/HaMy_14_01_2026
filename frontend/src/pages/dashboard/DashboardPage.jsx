@@ -80,21 +80,21 @@ const StatCard = ({ title, value, icon, color = 'black', subtitle, link }) => {
     };
 
     const CardContent = (
-        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all">
-            <div className="flex items-start justify-between mb-7">
-                <div className={`w-14 h-14 ${colorClasses[color]} rounded-xl flex items-center justify-center shadow-sm`}>
-                    {icon && React.createElement(icon, { className: 'w-7 h-7' })}
+        <div className="bg-white rounded-xl p-6 lg:p-8 shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all w-full min-w-0">
+            <div className="flex items-start justify-between mb-5 lg:mb-7">
+                <div className={`w-12 h-12 lg:w-14 lg:h-14 ${colorClasses[color]} rounded-xl flex items-center justify-center shadow-sm shrink-0`}>
+                    {icon && React.createElement(icon, { className: 'w-6 h-6 lg:w-7 lg:h-7' })}
                 </div>
                 {link && (
-                    <span className="text-xs text-gray-500 font-medium flex items-center gap-1 transition-colors">
+                    <span className="text-xs text-gray-500 font-medium flex items-center gap-1 transition-colors shrink-0">
                         Chi tiết <HiOutlineArrowRight className="w-3.5 h-3.5" />
                     </span>
                 )}
             </div>
-            <div>
-                <p className="text-3xl font-bold text-gray-900 mb-3">{value}</p>
-                <p className="text-sm text-gray-600 font-medium">{title}</p>
-                {subtitle && <p className="text-xs text-gray-400 mt-2">{subtitle}</p>}
+            <div className="min-w-0">
+                <p className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3 truncate">{value}</p>
+                <p className="text-sm text-gray-600 font-medium truncate">{title}</p>
+                {subtitle && <p className="text-xs text-gray-400 mt-2 line-clamp-2">{subtitle}</p>}
             </div>
         </div>
     );
@@ -109,13 +109,13 @@ const QuickActionCard = ({ title, description, icon, link, color = 'black' }) =>
     return (
         <Link
             to={link}
-            className="block bg-white rounded-xl p-8 shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all hover:-translate-y-0.5 group"
+            className="block bg-white rounded-xl p-6 lg:p-8 shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all hover:-translate-y-0.5 group w-full min-w-0"
         >
-            <div className={`w-14 h-14 ${color === 'black' ? 'bg-black' : `bg-${color}-600`} text-white rounded-xl flex items-center justify-center mb-6 shadow-sm group-hover:scale-105 transition-transform`}>
-                {icon && React.createElement(icon, { className: 'w-7 h-7' })}
+            <div className={`w-12 h-12 lg:w-14 lg:h-14 ${color === 'black' ? 'bg-black' : `bg-${color}-600`} text-white rounded-xl flex items-center justify-center mb-4 lg:mb-6 shadow-sm group-hover:scale-105 transition-transform shrink-0`}>
+                {icon && React.createElement(icon, { className: 'w-6 h-6 lg:w-7 lg:h-7' })}
             </div>
-            <h3 className="font-semibold text-gray-900 mb-3">{title}</h3>
-            <p className="text-sm text-gray-600">{description}</p>
+            <h3 className="font-semibold text-sm lg:text-base text-gray-900 mb-2 lg:mb-3 truncate">{title}</h3>
+            <p className="text-xs lg:text-sm text-gray-600 line-clamp-2">{description}</p>
         </Link>
     );
 };
@@ -207,12 +207,12 @@ const BorrowingStatusChart = ({ stats }) => {
     };
 
     return (
-        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-8">Thống kê mượn trả sách</h3>
-            <div className="h-[320px] mb-8">
+        <div className="bg-white rounded-xl p-6 lg:p-8 shadow-sm border border-gray-100 w-full min-w-0 overflow-hidden">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6 lg:mb-8">Thống kê mượn trả sách</h3>
+            <div className="h-[280px] lg:h-[320px] mb-6 lg:mb-8 w-full min-w-0">
                 <Pie data={chartData} options={options} />
             </div>
-            <div className="mt-8 grid grid-cols-2 md:grid-cols-3 gap-6 pt-6 border-t border-gray-200">
+            <div className="mt-6 lg:mt-8 grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6 pt-4 lg:pt-6 border-t border-gray-200">
                 <div className="text-center">
                     <div className="flex items-center justify-center gap-2 mb-1">
                         <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
@@ -478,15 +478,15 @@ const DashboardPage = () => {
     }
 
     return (
-        <div className="relative min-h-[calc(100vh-140px)]">
+        <div className="relative min-h-[calc(100vh-140px)] w-full overflow-x-hidden">
             {/* ===== MAIN CONTENT ===== */}
-            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-12">
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-12">
                 {/* ===== LEFT COLUMN - Stats & Actions ===== */}
-                <div className="lg:col-span-2 space-y-12">
+                <div className="lg:col-span-2 space-y-8 lg:space-y-12 min-w-0">
                     {/* Stat Cards Grid */}
-                    <div className="mb-12">
-                        <h1 className="text-xl font-semibold text-gray-900 mb-8">Thống kê tổng quan</h1>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-7">
+                    <div className="mb-8 lg:mb-12">
+                        <h1 className="text-xl font-semibold text-gray-900 mb-6 lg:mb-8">Thống kê tổng quan</h1>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-7">
                             <StatCard
                                 title="Tổng đầu sách"
                                 value={stats?.books?.totalBooks || 0}
@@ -521,11 +521,11 @@ const DashboardPage = () => {
                     </div>
 
                     {/* Additional Stats Row */}
-                    <div className="mb-12">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-7">
-                            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <div className="mb-8 lg:mb-12">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-7">
+                            <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-100 min-w-0">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-sm font-semibold text-gray-700">Trạng thái phiếu mượn</h3>
+                                    <h3 className="text-sm font-semibold text-gray-700 truncate">Trạng thái phiếu mượn</h3>
                                 </div>
                                 <div className="space-y-2">
                                     {stats?.borrows?.borrowsByStatus && Object.entries(stats.borrows.borrowsByStatus).map(([status, count]) => (
@@ -536,9 +536,9 @@ const DashboardPage = () => {
                                     ))}
                                 </div>
                             </div>
-                            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                            <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-100 min-w-0">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-sm font-semibold text-gray-700">Trạng thái bản sách</h3>
+                                    <h3 className="text-sm font-semibold text-gray-700 truncate">Trạng thái bản sách</h3>
                                 </div>
                                 <div className="space-y-2">
                                     {stats?.books?.copiesByStatus && Object.entries(stats.books.copiesByStatus).map(([status, count]) => (
@@ -549,9 +549,9 @@ const DashboardPage = () => {
                                     ))}
                                 </div>
                             </div>
-                            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                            <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-100 min-w-0">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-sm font-semibold text-gray-700">Hoạt động hôm nay</h3>
+                                    <h3 className="text-sm font-semibold text-gray-700 truncate">Hoạt động hôm nay</h3>
                                 </div>
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
@@ -572,41 +572,41 @@ const DashboardPage = () => {
                     </div>
 
                     {/* Borrowing Status Chart */}
-                    <div className="mb-12">
+                    <div className="mb-8 lg:mb-12 w-full min-w-0">
                         <BorrowingStatusChart stats={stats} />
                     </div>
 
                     {/* Financial Stats */}
-                    <div className="mb-12">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-8">Tài chính</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-7">
-                            <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                                <div className="flex items-center justify-between mb-7">
-                                    <h3 className="font-semibold text-lg text-gray-900">Tiền phạt chưa thu</h3>
-                                    <Link to="/finance" className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline">
+                    <div className="mb-8 lg:mb-12">
+                        <h2 className="text-xl font-semibold text-gray-900 mb-6 lg:mb-8">Tài chính</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-7">
+                            <div className="bg-white rounded-xl p-6 lg:p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow min-w-0">
+                                <div className="flex items-center justify-between mb-5 lg:mb-7">
+                                    <h3 className="font-semibold text-base lg:text-lg text-gray-900 truncate">Tiền phạt chưa thu</h3>
+                                    <Link to="/finance" className="text-xs lg:text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline shrink-0 ml-2">
                                         Xem tất cả
                                     </Link>
                                 </div>
-                                <p className="text-3xl font-bold text-red-600 mb-4">
+                                <p className="text-2xl lg:text-3xl font-bold text-red-600 mb-3 lg:mb-4 truncate">
                                     {(stats?.finances?.pendingFines || 0).toLocaleString('vi-VN')} ₫
                                 </p>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-gray-500 truncate">
                                     {stats?.borrows?.overdueBorrows || 0} phiếu quá hạn
                                 </p>
                             </div>
 
-                            <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                                <div className="flex items-center justify-between mb-7">
-                                    <h3 className="font-semibold text-lg text-gray-900">Thu tháng này</h3>
-                                    <span className="text-sm text-green-600 font-medium flex items-center gap-1">
-                                        <HiOutlineArrowRight className="w-4 h-4 -rotate-45" />
+                            <div className="bg-white rounded-xl p-6 lg:p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow min-w-0">
+                                <div className="flex items-center justify-between mb-5 lg:mb-7">
+                                    <h3 className="font-semibold text-base lg:text-lg text-gray-900 truncate">Thu tháng này</h3>
+                                    <span className="text-xs lg:text-sm text-green-600 font-medium flex items-center gap-1 shrink-0 ml-2">
+                                        <HiOutlineArrowRight className="w-3 h-3 lg:w-4 lg:h-4 -rotate-45" />
                                         Tháng {new Date().getMonth() + 1}
                                     </span>
                                 </div>
-                                <p className="text-3xl font-bold text-green-600 mb-4">
+                                <p className="text-2xl lg:text-3xl font-bold text-green-600 mb-3 lg:mb-4 truncate">
                                     {(stats?.finances?.collectedFinesThisMonth || 0).toLocaleString('vi-VN')} ₫
                                 </p>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-gray-500 truncate">
                                     Đã thu trong tháng
                                 </p>
                             </div>
@@ -614,9 +614,9 @@ const DashboardPage = () => {
                     </div>
 
                     {/* Quick Actions */}
-                    <div className="mb-12">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-8">Thao tác nhanh</h2>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-7">
+                    <div className="mb-8 lg:mb-12">
+                        <h2 className="text-xl font-semibold text-gray-900 mb-6 lg:mb-8">Thao tác nhanh</h2>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-7">
                             <QuickActionCard
                                 title="Mượn sách"
                                 description="Tạo phiếu mượn mới"
@@ -646,7 +646,7 @@ const DashboardPage = () => {
                 </div>
 
                 {/* ===== RIGHT COLUMN - Overdue Borrowers Panel ===== */}
-                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 h-fit lg:sticky lg:top-6">
+                <div className="bg-white rounded-xl p-6 lg:p-8 shadow-sm border border-gray-100 h-fit lg:sticky lg:top-6 w-full min-w-0">
                     {/* Header */}
                     <div className="mb-10 pb-6 border-b border-gray-200">
                         <h2 className="text-xl font-bold text-gray-900 text-center">

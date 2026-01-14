@@ -4,33 +4,22 @@
  * ===================================================================
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Modal from '../Modal';
 import { api } from '../../services';
-import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { HiOutlineBookOpen, HiOutlineCalendar, HiOutlineX, HiOutlineCheckCircle } from 'react-icons/hi';
 
 const ReaderBorrowModal = ({ isOpen, onClose, onSuccess, book }) => {
-    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [editions, setEditions] = useState([]);
     const [selectedCopies, setSelectedCopies] = useState([]);
     const [dueDate, setDueDate] = useState('');
 
-    // Load editions and available copies
-    useEffect(() => {
-        if (isOpen && book?.id) {
-            loadEditions();
-            // Set default due date (14 days from now)
-            const defaultDue = new Date();
-            defaultDue.setDate(defaultDue.getDate() + 14);
-            setDueDate(defaultDue.toISOString().split('T')[0]);
-        }
-    }, [isOpen, book]);
-
-    const loadEditions = async () => {
+    // Load editions function
+    const loadEditions = useCallback(async () => {
+        if (!book?.id) return;
         try {
             setLoading(true);
             const response = await api.get(`/books/${book.id}/editions`);
@@ -43,7 +32,18 @@ const ReaderBorrowModal = ({ isOpen, onClose, onSuccess, book }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [book?.id]);
+
+    // Load editions and available copies
+    useEffect(() => {
+        if (isOpen && book?.id) {
+            loadEditions();
+            // Set default due date (14 days from now)
+            const defaultDue = new Date();
+            defaultDue.setDate(defaultDue.getDate() + 14);
+            setDueDate(defaultDue.toISOString().split('T')[0]);
+        }
+    }, [isOpen, book?.id, loadEditions]);
 
     const handleSelectCopy = async (edition) => {
         try {
@@ -109,8 +109,26 @@ const ReaderBorrowModal = ({ isOpen, onClose, onSuccess, book }) => {
             handleClose();
         } catch (error) {
             console.error('Create borrow error:', error);
-            const errorMessage = error.response?.data?.message || error.response?.data?.errors?.[0]?.message || 'Lỗi tạo phiếu mượn';
-            toast.error(errorMessage);
+            
+            // Xử lý lỗi chi tiết
+            const errorData = error.response?.data;
+            
+            // Nếu có mảng errors (validation errors)
+            if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+                // Hiển thị từng lỗi validation
+                errorData.errors.forEach((err, index) => {
+                    const fieldName = err.field || 'Dữ liệu';
+                    const message = err.message || 'Không hợp lệ';
+                    toast.error(`${fieldName}: ${message}`, {
+                        duration: 4000,
+                        id: `borrow-error-${index}` // Tránh duplicate toast
+                    });
+                });
+            } else {
+                // Hiển thị message chính
+                const errorMessage = errorData?.message || error.message || 'Lỗi tạo phiếu mượn. Vui lòng thử lại.';
+                toast.error(errorMessage, { duration: 5000 });
+            }
         } finally {
             setSubmitting(false);
         }

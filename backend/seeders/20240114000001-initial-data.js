@@ -113,42 +113,49 @@ module.exports = {
                 setting_key: 'fine_rate_percent',
                 setting_value: '10',
                 description: 'Phần trăm tiền phạt trễ hạn (% giá sách / ngày)',
+                created_at: now,
                 updated_at: now
             },
             {
                 setting_key: 'default_borrow_days',
                 setting_value: '14',
                 description: 'Số ngày mượn mặc định',
+                created_at: now,
                 updated_at: now
             },
             {
                 setting_key: 'default_max_books',
                 setting_value: '5',
                 description: 'Số sách tối đa được mượn cùng lúc',
+                created_at: now,
                 updated_at: now
             },
             {
                 setting_key: 'default_deposit_amount',
                 setting_value: '200000',
                 description: 'Tiền đặt cọc mặc định (VND)',
+                created_at: now,
                 updated_at: now
             },
             {
                 setting_key: 'library_name',
                 setting_value: 'Thư viện ABC',
                 description: 'Tên thư viện',
+                created_at: now,
                 updated_at: now
             },
             {
                 setting_key: 'library_address',
                 setting_value: '123 Đường ABC, Quận XYZ, TP. Hồ Chí Minh',
                 description: 'Địa chỉ thư viện',
+                created_at: now,
                 updated_at: now
             },
             {
                 setting_key: 'library_phone',
                 setting_value: '028-1234-5678',
                 description: 'Số điện thoại liên hệ',
+                created_at: now,
                 updated_at: now
             }
         ]);
