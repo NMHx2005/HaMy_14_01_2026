@@ -1,0 +1,206 @@
+/**
+ * ===================================================================
+ * LIBRARY CARD MODAL - Modal cấp/sửa thẻ thư viện
+ * ===================================================================
+ */
+
+import { useState, useEffect } from 'react';
+import Modal from '../Modal';
+import { api } from '../../services';
+import toast from 'react-hot-toast';
+import { HiOutlineCreditCard, HiOutlineCalendar } from 'react-icons/hi';
+
+const LibraryCardModal = ({ isOpen, onClose, onSuccess, member, card = null }) => {
+    const isEdit = !!card;
+    const [submitting, setSubmitting] = useState(false);
+
+    const [formData, setFormData] = useState({
+        expiry_date: '',
+        max_books: 5,
+        max_borrow_days: 14,
+        deposit_amount: 100000
+    });
+
+    // Set default or existing values
+    useEffect(() => {
+        if (isOpen) {
+            if (card) {
+                setFormData({
+                    expiry_date: card.expiry_date ? card.expiry_date.split('T')[0] : '',
+                    max_books: card.max_books || 5,
+                    max_borrow_days: card.max_borrow_days || 14,
+                    deposit_amount: card.deposit_amount || 100000
+                });
+            } else {
+                // Default expiry date (1 year from now)
+                const oneYearFromNow = new Date();
+                oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+                setFormData({
+                    expiry_date: oneYearFromNow.toISOString().split('T')[0],
+                    max_books: 5,
+                    max_borrow_days: 14,
+                    deposit_amount: 100000
+                });
+            }
+        }
+    }, [isOpen, card]);
+
+    const handleChange = (e) => {
+        const { name, value, type } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'number' ? parseInt(value) || 0 : value
+        }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (!formData.expiry_date) {
+            toast.error('Vui lòng chọn ngày hết hạn');
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+
+            if (isEdit) {
+                await api.put(`/library-cards/${card.id}`, {
+                    expiry_date: formData.expiry_date,
+                    max_books: formData.max_books,
+                    max_borrow_days: formData.max_borrow_days,
+                    status: 'active'
+                });
+                toast.success('Cập nhật thẻ thành công');
+            } else {
+                await api.post('/library-cards', {
+                    reader_id: member.id,
+                    ...formData
+                });
+                toast.success('Cấp thẻ thư viện thành công');
+            }
+
+            onSuccess?.();
+            onClose();
+        } catch (error) {
+            toast.error(error.message || 'Lỗi thao tác thẻ');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const getMinDate = () => {
+        const today = new Date();
+        today.setDate(today.getDate() + 1);
+        return today.toISOString().split('T')[0];
+    };
+
+    return (
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={isEdit ? 'Sửa thẻ thư viện' : 'Cấp thẻ thư viện'}
+            size="md"
+        >
+            <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Member Info */}
+                {member && (
+                    <div className="bg-gray-50 rounded-xl p-4 flex items-center gap-3">
+                        <div className="w-12 h-12 bg-black text-white rounded-lg flex items-center justify-center">
+                            <HiOutlineCreditCard className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <p className="font-semibold text-gray-900">{member.full_name}</p>
+                            <p className="text-sm text-gray-500">CMND: {member.id_card_number}</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Expiry Date */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <HiOutlineCalendar className="inline w-4 h-4 mr-1" />
+                        Ngày hết hạn <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="date"
+                        name="expiry_date"
+                        value={formData.expiry_date}
+                        onChange={handleChange}
+                        min={getMinDate()}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
+                        required
+                    />
+                </div>
+
+                {/* Settings Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Số sách tối đa</label>
+                        <input
+                            type="number"
+                            name="max_books"
+                            value={formData.max_books}
+                            onChange={handleChange}
+                            min={1}
+                            max={20}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Số ngày mượn tối đa</label>
+                        <input
+                            type="number"
+                            name="max_borrow_days"
+                            value={formData.max_borrow_days}
+                            onChange={handleChange}
+                            min={1}
+                            max={60}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
+                        />
+                    </div>
+                </div>
+
+                {/* Deposit (only for create) */}
+                {!isEdit && (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Tiền đặt cọc (₫)</label>
+                        <input
+                            type="number"
+                            name="deposit_amount"
+                            value={formData.deposit_amount}
+                            onChange={handleChange}
+                            min={0}
+                            step={10000}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
+                        />
+                    </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={submitting}
+                        className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                    >
+                        Hủy
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={submitting}
+                        className="flex-1 px-4 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
+                    >
+                        {submitting && (
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        )}
+                        {isEdit ? 'Cập nhật' : 'Cấp thẻ'}
+                    </button>
+                </div>
+            </form>
+        </Modal>
+    );
+};
+
+export default LibraryCardModal;

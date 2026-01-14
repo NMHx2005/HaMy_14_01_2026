@@ -1,0 +1,464 @@
+/**
+ * ===================================================================
+ * CREATE BORROW MODAL - Modal tạo phiếu mượn mới
+ * ===================================================================
+ */
+
+import { useState, useEffect } from 'react';
+import Modal from '../Modal';
+import { api } from '../../services';
+import toast from 'react-hot-toast';
+import { HiOutlineSearch, HiOutlineUser, HiOutlineBookOpen, HiOutlineX, HiOutlinePlus } from 'react-icons/hi';
+
+const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
+    const [step, setStep] = useState(1); // 1: Select reader, 2: Select books, 3: Confirm
+    const [loading, setLoading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+
+    // Reader selection
+    const [readerSearch, setReaderSearch] = useState('');
+    const [readers, setReaders] = useState([]);
+    const [selectedReader, setSelectedReader] = useState(null);
+
+    // Book selection
+    const [bookSearch, setBookSearch] = useState('');
+    const [books, setBooks] = useState([]);
+    const [selectedBooks, setSelectedBooks] = useState([]);
+
+    // Borrow details
+    const [dueDate, setDueDate] = useState('');
+    const [notes, setNotes] = useState('');
+
+    // Search readers
+    useEffect(() => {
+        if (!readerSearch.trim() || step !== 1) return;
+
+        const timer = setTimeout(async () => {
+            try {
+                setLoading(true);
+                const response = await api.get('/readers', {
+                    params: { keyword: readerSearch, limit: 10 }
+                });
+                // Response có thể là { success, data, pagination } hoặc data trực tiếp
+                const readersData = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
+                setReaders(readersData);
+            } catch (error) {
+                console.error('Search readers error:', error);
+            } finally {
+                setLoading(false);
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [readerSearch, step]);
+
+    // Search books
+    useEffect(() => {
+        if (!bookSearch.trim() || step !== 2) return;
+
+        const timer = setTimeout(async () => {
+            try {
+                setLoading(true);
+                const response = await api.get('/books', {
+                    params: { keyword: bookSearch, limit: 20 }
+                });
+                // Response có thể là { success, data, pagination } hoặc data trực tiếp
+                const booksData = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
+                setBooks(booksData);
+            } catch (error) {
+                console.error('Search books error:', error);
+            } finally {
+                setLoading(false);
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [bookSearch, step]);
+
+    // Set default due date (14 days from now)
+    useEffect(() => {
+        if (isOpen) {
+            const defaultDue = new Date();
+            defaultDue.setDate(defaultDue.getDate() + 14);
+            setDueDate(defaultDue.toISOString().split('T')[0]);
+        }
+    }, [isOpen]);
+
+    const handleSelectReader = (reader) => {
+        setSelectedReader(reader);
+        setStep(2);
+    };
+
+    const handleSelectBook = async (book) => {
+        // Get available copies for this book
+        try {
+            // Check if book has editions with available copies
+            const editionsResponse = await api.get(`/books/${book.id}/editions`);
+            // Response có thể là { success, data } hoặc array trực tiếp
+            const editions = Array.isArray(editionsResponse?.data) ? editionsResponse.data : (Array.isArray(editionsResponse) ? editionsResponse : []);
+
+            if (editions.length === 0) {
+                toast.error('Sách này chưa có phiên bản nào');
+                return;
+            }
+
+            // Get copies from first edition that has available copies
+            for (const edition of editions) {
+                const copiesResponse = await api.get(`/copies`, {
+                    params: { edition_id: edition.id, status: 'available', limit: 1 }
+                });
+                // Response có thể là { success, data } hoặc array trực tiếp
+                const copies = Array.isArray(copiesResponse?.data) ? copiesResponse.data : (Array.isArray(copiesResponse) ? copiesResponse : []);
+
+                if (copies.length > 0) {
+                    const copy = copies[0];
+                    // Check if already selected
+                    if (selectedBooks.find(b => b.copyId === copy.id)) {
+                        toast.error('Bản sách này đã được chọn');
+                        return;
+                    }
+
+                    setSelectedBooks(prev => [...prev, {
+                        copyId: copy.id,
+                        bookId: book.id,
+                        title: book.title,
+                        code: book.code,
+                        editionId: edition.id
+                    }]);
+                    setBookSearch('');
+                    setBooks([]);
+                    toast.success(`Đã thêm: ${book.title}`);
+                    return;
+                }
+            }
+
+            toast.error('Sách này đã hết bản có sẵn');
+        } catch (error) {
+            console.error('Get copies error:', error);
+            toast.error('Không thể lấy thông tin sách');
+        }
+    };
+
+    const handleRemoveBook = (copyId) => {
+        setSelectedBooks(prev => prev.filter(b => b.copyId !== copyId));
+    };
+
+    const handleSubmit = async () => {
+        if (!selectedReader?.libraryCard?.id) {
+            toast.error('Độc giả chưa có thẻ thư viện');
+            return;
+        }
+        if (selectedBooks.length === 0) {
+            toast.error('Vui lòng chọn ít nhất 1 cuốn sách');
+            return;
+        }
+        if (!dueDate) {
+            toast.error('Vui lòng chọn ngày hạn trả');
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+            const response = await api.post('/borrow-requests', {
+                library_card_id: selectedReader.libraryCard.id,
+                book_copy_ids: selectedBooks.map(b => b.copyId),
+                due_date: dueDate,
+                notes
+            });
+
+            // Response có thể là { success, message, data } hoặc message trực tiếp
+            const message = response?.message || response?.data?.message || 'Tạo phiếu mượn thành công';
+            toast.success(message);
+            onSuccess?.();
+            handleClose();
+        } catch (error) {
+            console.error('Create borrow error:', error);
+            toast.error(error.response?.data?.message || 'Lỗi tạo phiếu mượn');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleClose = () => {
+        setStep(1);
+        setReaderSearch('');
+        setReaders([]);
+        setSelectedReader(null);
+        setBookSearch('');
+        setBooks([]);
+        setSelectedBooks([]);
+        setNotes('');
+        onClose();
+    };
+
+    const getMinDate = () => {
+        const today = new Date();
+        today.setDate(today.getDate() + 1);
+        return today.toISOString().split('T')[0];
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={handleClose} title="Tạo phiếu mượn mới" size="lg">
+            {/* Progress Steps */}
+            <div className="flex items-center justify-center gap-4 mb-6">
+                {[1, 2, 3].map((s) => (
+                    <div key={s} className="flex items-center gap-2">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${step >= s ? 'bg-black text-white' : 'bg-gray-200 text-gray-500'
+                            }`}>
+                            {s}
+                        </div>
+                        <span className={`text-sm ${step >= s ? 'text-gray-900' : 'text-gray-400'}`}>
+                            {s === 1 ? 'Chọn độc giả' : s === 2 ? 'Chọn sách' : 'Xác nhận'}
+                        </span>
+                        {s < 3 && <div className="w-8 h-0.5 bg-gray-200" />}
+                    </div>
+                ))}
+            </div>
+
+            {/* Step 1: Select Reader */}
+            {step === 1 && (
+                <div className="space-y-4">
+                    <div className="relative">
+                        <HiOutlineSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                            type="text"
+                            value={readerSearch}
+                            onChange={(e) => setReaderSearch(e.target.value)}
+                            placeholder="Tìm kiếm độc giả theo tên, CMND, số thẻ..."
+                            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
+                            autoFocus
+                        />
+                    </div>
+
+                    <div className="max-h-[300px] overflow-y-auto space-y-2">
+                        {loading ? (
+                            <div className="text-center py-8 text-gray-500">Đang tìm...</div>
+                        ) : readers.length > 0 ? (
+                            readers.map((reader) => (
+                                <button
+                                    key={reader.id}
+                                    onClick={() => handleSelectReader(reader)}
+                                    className="w-full flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors text-left"
+                                >
+                                    <div className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center">
+                                        <HiOutlineUser className="w-6 h-6" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-semibold text-gray-900">{reader.full_name}</p>
+                                        <p className="text-sm text-gray-500">
+                                            {reader.libraryCard?.card_number
+                                                ? `Thẻ: ${reader.libraryCard.card_number}`
+                                                : 'Chưa có thẻ thư viện'}
+                                        </p>
+                                    </div>
+                                    {reader.libraryCard && (() => {
+                                        // Kiểm tra nếu thẻ đã hết hạn dựa trên expiry_date
+                                        const isExpired = reader.libraryCard.expiry_date && new Date(reader.libraryCard.expiry_date) < new Date();
+                                        const isActive = reader.libraryCard.status === 'active' && !isExpired;
+                                        
+                                        return (
+                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${isActive
+                                                ? 'bg-green-100 text-green-800'
+                                                : isExpired
+                                                    ? 'bg-orange-100 text-orange-800'
+                                                    : 'bg-red-100 text-red-800'
+                                                }`}>
+                                                {isExpired ? 'Hết hạn' : (isActive ? 'Còn hạn' : 'Không hoạt động')}
+                                            </span>
+                                        );
+                                    })()}
+                                </button>
+                            ))
+                        ) : readerSearch.trim() ? (
+                            <div className="text-center py-8 text-gray-500">
+                                Không tìm thấy độc giả
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-gray-400">
+                                Nhập tên hoặc số thẻ để tìm kiếm
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Step 2: Select Books */}
+            {step === 2 && (
+                <div className="space-y-4">
+                    {/* Selected Reader Info */}
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center">
+                                <HiOutlineUser className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="font-semibold text-gray-900">{selectedReader?.full_name}</p>
+                                <p className="text-sm text-gray-500">Thẻ: {selectedReader?.libraryCard?.card_number}</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setStep(1)}
+                            className="text-sm text-blue-600 hover:underline"
+                        >
+                            Đổi
+                        </button>
+                    </div>
+
+                    {/* Book Search */}
+                    <div className="relative">
+                        <HiOutlineSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                            type="text"
+                            value={bookSearch}
+                            onChange={(e) => setBookSearch(e.target.value)}
+                            placeholder="Tìm kiếm sách theo tên, mã sách..."
+                            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
+                        />
+                    </div>
+
+                    {/* Book Results */}
+                    {books.length > 0 && (
+                        <div className="max-h-[150px] overflow-y-auto space-y-2 border border-gray-200 rounded-xl p-2">
+                            {books.map((book) => (
+                                <button
+                                    key={book.id}
+                                    onClick={() => handleSelectBook(book)}
+                                    className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors text-left"
+                                >
+                                    <HiOutlineBookOpen className="w-5 h-5 text-gray-400" />
+                                    <div className="flex-1">
+                                        <p className="font-medium text-gray-900 text-sm">{book.title}</p>
+                                        <p className="text-xs text-gray-500">Mã: {book.code}</p>
+                                    </div>
+                                    <HiOutlinePlus className="w-5 h-5 text-gray-400" />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Selected Books */}
+                    <div>
+                        <p className="text-sm font-medium text-gray-700 mb-2">
+                            Sách đã chọn ({selectedBooks.length})
+                        </p>
+                        {selectedBooks.length > 0 ? (
+                            <div className="space-y-2">
+                                {selectedBooks.map((book) => (
+                                    <div key={book.copyId} className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                                        <HiOutlineBookOpen className="w-5 h-5 text-green-600" />
+                                        <div className="flex-1">
+                                            <p className="font-medium text-gray-900 text-sm">{book.title}</p>
+                                            <p className="text-xs text-gray-500">Mã: {book.code}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => handleRemoveBook(book.copyId)}
+                                            className="p-1 hover:bg-red-100 rounded-lg transition-colors"
+                                        >
+                                            <HiOutlineX className="w-4 h-4 text-red-500" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-6 bg-gray-50 rounded-xl text-gray-400 text-sm">
+                                Tìm và chọn sách để mượn
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Navigation */}
+                    <div className="flex gap-3 pt-4">
+                        <button
+                            onClick={() => setStep(1)}
+                            className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+                        >
+                            Quay lại
+                        </button>
+                        <button
+                            onClick={() => setStep(3)}
+                            disabled={selectedBooks.length === 0}
+                            className="flex-1 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 font-medium disabled:bg-gray-300"
+                        >
+                            Tiếp tục
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Step 3: Confirm */}
+            {step === 3 && (
+                <div className="space-y-4">
+                    {/* Summary */}
+                    <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center">
+                                <HiOutlineUser className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="font-semibold text-gray-900">{selectedReader?.full_name}</p>
+                                <p className="text-sm text-gray-500">Thẻ: {selectedReader?.libraryCard?.card_number}</p>
+                            </div>
+                        </div>
+
+                        <div className="border-t border-gray-200 pt-4">
+                            <p className="text-sm font-medium text-gray-700 mb-2">Sách mượn ({selectedBooks.length})</p>
+                            {selectedBooks.map((book) => (
+                                <div key={book.copyId} className="flex items-center gap-2 text-sm text-gray-600 py-1">
+                                    <HiOutlineBookOpen className="w-4 h-4" />
+                                    {book.title}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Due Date */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Ngày hạn trả</label>
+                        <input
+                            type="date"
+                            value={dueDate}
+                            onChange={(e) => setDueDate(e.target.value)}
+                            min={getMinDate()}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
+                        />
+                    </div>
+
+                    {/* Notes */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú (tùy chọn)</label>
+                        <textarea
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            rows={2}
+                            placeholder="Ghi chú thêm..."
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent resize-none"
+                        />
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-3 pt-4">
+                        <button
+                            onClick={() => setStep(2)}
+                            disabled={submitting}
+                            className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+                        >
+                            Quay lại
+                        </button>
+                        <button
+                            onClick={handleSubmit}
+                            disabled={submitting}
+                            className="flex-1 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 font-medium flex items-center justify-center gap-2"
+                        >
+                            {submitting && (
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            )}
+                            Tạo phiếu mượn
+                        </button>
+                    </div>
+                </div>
+            )}
+        </Modal>
+    );
+};
+
+export default CreateBorrowModal;
