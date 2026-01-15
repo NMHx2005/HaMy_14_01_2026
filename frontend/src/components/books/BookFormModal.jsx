@@ -24,13 +24,19 @@ const BookFormModal = ({ isOpen, onClose, onSuccess, book = null }) => {
         page_count: '',
         size: '',
         description: '',
-        author_ids: []
+        author_ids: [],
+        // Initial edition data (for new books)
+        publisher_id: '',
+        publish_year: new Date().getFullYear(),
+        isbn: '',
+        initial_copies: 1
     });
 
     // Dropdown data
     const [fields, setFields] = useState([]);
     const [genres, setGenres] = useState([]);
     const [authors, setAuthors] = useState([]);
+    const [publishers, setPublishers] = useState([]);
     const [authorSearch, setAuthorSearch] = useState('');
     const [filteredAuthors, setFilteredAuthors] = useState([]);
 
@@ -78,18 +84,21 @@ const BookFormModal = ({ isOpen, onClose, onSuccess, book = null }) => {
     const loadDropdownData = async () => {
         try {
             setLoading(true);
-            const [fieldsRes, genresRes, authorsRes] = await Promise.all([
+            const [fieldsRes, genresRes, authorsRes, publishersRes] = await Promise.all([
                 api.get('/fields'),
                 api.get('/genres'),
-                api.get('/authors')
+                api.get('/authors'),
+                api.get('/publishers')
             ]);
             // Response có thể là { success, data } hoặc array trực tiếp
             const fieldsData = Array.isArray(fieldsRes?.data) ? fieldsRes.data : (Array.isArray(fieldsRes) ? fieldsRes : []);
             const genresData = Array.isArray(genresRes?.data) ? genresRes.data : (Array.isArray(genresRes) ? genresRes : []);
             const authorsData = Array.isArray(authorsRes?.data) ? authorsRes.data : (Array.isArray(authorsRes) ? authorsRes : []);
+            const publishersData = Array.isArray(publishersRes?.data) ? publishersRes.data : (Array.isArray(publishersRes) ? publishersRes : []);
             setFields(fieldsData);
             setGenres(genresData);
             setAuthors(authorsData);
+            setPublishers(publishersData);
         } catch (error) {
             console.error('Load dropdown error:', error);
         } finally {
@@ -308,6 +317,63 @@ const BookFormModal = ({ isOpen, onClose, onSuccess, book = null }) => {
                             </div>
                         )}
                     </div>
+
+                    {/* Initial Edition - Only for new books */}
+                    {!isEdit && (
+                        <div className="p-4 bg-blue-50 rounded-xl">
+                            <h4 className="text-sm font-semibold text-blue-900 mb-3">Phiên bản xuất bản đầu tiên</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Nhà xuất bản</label>
+                                    <select
+                                        name="publisher_id"
+                                        value={formData.publisher_id}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent bg-white"
+                                    >
+                                        <option value="">-- Chọn NXB --</option>
+                                        {publishers.map(pub => (
+                                            <option key={pub.id} value={pub.id}>{pub.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Năm xuất bản</label>
+                                    <input
+                                        type="number"
+                                        name="publish_year"
+                                        value={formData.publish_year}
+                                        onChange={handleChange}
+                                        min="1900"
+                                        max={new Date().getFullYear()}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">ISBN</label>
+                                    <input
+                                        type="text"
+                                        name="isbn"
+                                        value={formData.isbn}
+                                        onChange={handleChange}
+                                        placeholder="VD: 978-3-16-148410-0"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Số bản sách ban đầu</label>
+                                    <input
+                                        type="number"
+                                        name="initial_copies"
+                                        value={formData.initial_copies}
+                                        onChange={handleChange}
+                                        min="0"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Description */}
                     <div>

@@ -33,7 +33,8 @@ import {
   NotFoundPage,
   AdminPage,
   ProfilePage,
-  NotificationPage
+  NotificationPage,
+  CategoryPage
 } from './pages';
 
 /**
@@ -108,6 +109,21 @@ function App() {
               </ProtectedRoute>
             } />
 
+            {/* Quản lý danh mục */}
+            <Route path="/categories" element={
+              <ProtectedRoute roles={['admin', 'librarian']}>
+                <CategoryPage />
+              </ProtectedRoute>
+            } />
+
+            {/* ===== ADMIN + LIBRARIAN ROUTES ===== */}
+            {/* Thống kê / Báo cáo */}
+            <Route path="/statistics" element={
+              <ProtectedRoute roles={['admin', 'librarian']}>
+                <StatisticsPage />
+              </ProtectedRoute>
+            } />
+
             {/* ===== ADMIN ONLY ROUTES ===== */}
             {/* Trang điều hành (Admin) */}
             <Route path="/admin" element={
@@ -120,13 +136,6 @@ function App() {
             <Route path="/operations" element={
               <ProtectedRoute roles={['admin']}>
                 <AdminPage />
-              </ProtectedRoute>
-            } />
-
-            {/* Thống kê */}
-            <Route path="/statistics" element={
-              <ProtectedRoute roles={['admin']}>
-                <StatisticsPage />
               </ProtectedRoute>
             } />
 

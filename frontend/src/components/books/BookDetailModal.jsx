@@ -30,13 +30,13 @@ const BookDetailModal = ({ isOpen, onClose, book, onBorrow, onUpdate }) => {
         }
     }, [book?.id]);
 
-    // Load editions khi mở modal
+    // Load editions khi mở modal - cho tất cả users
     useEffect(() => {
-        if (isOpen && book?.id && (user?.role === 'admin' || user?.role === 'librarian')) {
+        if (isOpen && book?.id) {
             loadEditions();
         }
-    }, [isOpen, book?.id, user?.role, loadEditions]);
-    
+    }, [isOpen, book?.id, loadEditions]);
+
     if (!book) return null;
 
     const handleAddCopies = async (editionId, quantity) => {
@@ -92,7 +92,7 @@ const BookDetailModal = ({ isOpen, onClose, book, onBorrow, onUpdate }) => {
                 disposed: 0
             };
         }
-        
+
         // Fallback: tính từ editions
         let available = 0, borrowed = 0, damaged = 0, disposed = 0;
         book.editions?.forEach(edition => {
@@ -204,12 +204,12 @@ const BookDetailModal = ({ isOpen, onClose, book, onBorrow, onUpdate }) => {
                         )}
                     </div>
                     {(book.editions?.length > 0 || editions.length > 0) && (
-                        <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                        <div className="space-y-3 max-h-[400px] overflow-y-auto">
                             {(editions.length > 0 ? editions : book.editions || []).map((edition) => {
                                 const copies = edition.copies || [];
                                 const availableCopies = copies.filter(c => c.status === 'available');
                                 const isManaging = manageQuantity?.editionId === edition.id;
-                                
+
                                 return (
                                     <div key={edition.id} className="p-3 bg-gray-50 rounded-lg">
                                         <div className="flex items-center justify-between mb-2">
@@ -226,7 +226,42 @@ const BookDetailModal = ({ isOpen, onClose, book, onBorrow, onUpdate }) => {
                                                 </span>
                                             </div>
                                         </div>
-                                        
+
+                                        {/* Danh sách bản sách với thông tin người mượn */}
+                                        {(user?.role === 'admin' || user?.role === 'librarian') && copies.length > 0 && (
+                                            <div className="mt-2 pt-2 border-t border-gray-200">
+                                                <p className="text-xs font-medium text-gray-500 mb-2">Chi tiết bản sách:</p>
+                                                <div className="space-y-1 max-h-[150px] overflow-y-auto">
+                                                    {copies.map((copy) => (
+                                                        <div key={copy.id} className="flex items-center justify-between p-2 bg-white rounded-lg text-xs">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-mono text-gray-600">#{copy.copy_number}</span>
+                                                                <span className={`px-2 py-0.5 rounded-full ${copy.status === 'available' ? 'bg-green-100 text-green-700' :
+                                                                    copy.status === 'borrowed' ? 'bg-yellow-100 text-yellow-700' :
+                                                                        copy.status === 'damaged' ? 'bg-red-100 text-red-700' :
+                                                                            'bg-gray-100 text-gray-700'
+                                                                    }`}>
+                                                                    {copy.status === 'available' ? 'Có sẵn' :
+                                                                        copy.status === 'borrowed' ? 'Đang mượn' :
+                                                                            copy.status === 'damaged' ? 'Hư hỏng' : 'Thanh lý'}
+                                                                </span>
+                                                            </div>
+                                                            {/* Hiển thị thông tin người mượn */}
+                                                            {copy.borrower && (
+                                                                <div className="text-right text-gray-600">
+                                                                    <span className="font-medium text-gray-900">{copy.borrower.name}</span>
+                                                                    {copy.borrower.phone && <span className="ml-2">{copy.borrower.phone}</span>}
+                                                                    <span className="ml-2 text-yellow-600">
+                                                                        Hạn: {new Date(copy.borrower.due_date).toLocaleDateString('vi-VN')}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {/* Quản lý số lượng cho admin/thủ thư */}
                                         {(user?.role === 'admin' || user?.role === 'librarian') && (
                                             <div className="mt-2 pt-2 border-t border-gray-200">

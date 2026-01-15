@@ -57,7 +57,7 @@ const MyFinancePage = () => {
     }, [fetchData]);
 
     const formatCurrency = (amount) => {
-        return (amount || 0).toLocaleString('vi-VN') + ' ₫';
+        return (amount || 0).toLocaleString('vi-VN') + ' VNĐ';
     };
 
     const formatDate = (dateStr) => {

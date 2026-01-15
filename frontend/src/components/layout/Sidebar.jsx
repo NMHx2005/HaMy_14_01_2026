@@ -22,7 +22,8 @@ import {
     HiOutlineCog,            // Cài đặt
     HiOutlineCurrencyDollar, // Tài chính
     HiOutlineUser,           // Hồ sơ cá nhân
-    HiOutlineBell            // Thông báo
+    HiOutlineBell,           // Thông báo
+    HiOutlineTag             // Danh mục
 } from 'react-icons/hi';
 
 // Import logo SVG
@@ -47,11 +48,7 @@ const Sidebar = () => {
 
     /**
      * Menu items cho Admin/Librarian (Staff)
-     * Theo thứ tự trong Figma:
-     * - Trang chủ (y=158)
-     * - Mượn & Trả (y=226)
-     * - Sách (y=294)
-     * - Thành viên (y=362)
+     * Thứ tự: Trang chủ → Mượn trả → Sách → Danh mục → Thành viên → Tài chính → Báo cáo
      */
     const staffMenuItems = [
         {
@@ -70,9 +67,24 @@ const Sidebar = () => {
             label: 'Sách',
         },
         {
+            path: '/categories',
+            icon: HiOutlineTag,
+            label: 'Danh mục',
+        },
+        {
             path: '/members',
             icon: HiOutlineUserGroup,
             label: 'Thành viên',
+        },
+        {
+            path: '/finance',
+            icon: HiOutlineCurrencyDollar,
+            label: 'Tài chính',
+        },
+        {
+            path: '/statistics',
+            icon: HiOutlineChartBar,
+            label: 'Báo cáo',
         },
         {
             path: '/notifications',
@@ -87,23 +99,13 @@ const Sidebar = () => {
     ];
 
     /**
-     * Menu items chỉ dành cho Admin
+     * Menu items chỉ dành cho Admin (Điều hành + Cài đặt)
      */
     const adminOnlyItems = [
         {
             path: '/operations',
             icon: HiOutlineOfficeBuilding,
             label: 'Điều hành',
-        },
-        {
-            path: '/finance',
-            icon: HiOutlineCurrencyDollar,
-            label: 'Tài chính',
-        },
-        {
-            path: '/statistics',
-            icon: HiOutlineChartBar,
-            label: 'Thống kê',
         },
         {
             path: '/settings',

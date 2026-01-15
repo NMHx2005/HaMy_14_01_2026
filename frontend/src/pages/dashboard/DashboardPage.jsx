@@ -327,7 +327,7 @@ const ReaderDashboard = ({ user }) => {
                 />
                 <StatCard
                     title="Nợ phí thư viện"
-                    value={`${stats.fines.toLocaleString('vi-VN')} ₫`}
+                    value={`${stats.fines.toLocaleString('vi-VN')} VNĐ`}
                     icon={HiOutlineCurrencyDollar}
                     color="yellow"
                     link="/my-finance"
@@ -588,7 +588,7 @@ const DashboardPage = () => {
                                     </Link>
                                 </div>
                                 <p className="text-2xl lg:text-3xl font-bold text-red-600 mb-3 lg:mb-4 truncate">
-                                    {(stats?.finances?.pendingFines || 0).toLocaleString('vi-VN')} ₫
+                                    {(stats?.finances?.pendingFines || 0).toLocaleString('vi-VN')} VNĐ
                                 </p>
                                 <p className="text-sm text-gray-500 truncate">
                                     {stats?.borrows?.overdueBorrows || 0} phiếu quá hạn
@@ -604,7 +604,7 @@ const DashboardPage = () => {
                                     </span>
                                 </div>
                                 <p className="text-2xl lg:text-3xl font-bold text-green-600 mb-3 lg:mb-4 truncate">
-                                    {(stats?.finances?.collectedFinesThisMonth || 0).toLocaleString('vi-VN')} ₫
+                                    {(stats?.finances?.collectedFinesThisMonth || 0).toLocaleString('vi-VN')} VNĐ
                                 </p>
                                 <p className="text-sm text-gray-500 truncate">
                                     Đã thu trong tháng

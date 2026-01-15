@@ -305,6 +305,21 @@ const createBorrowRequest = asyncHandler(async (req, res) => {
         throw new AppError(`Số dư tiền cọc không đủ. Cần tối thiểu ${minDepositAmount.toLocaleString()}đ để mượn sách.`, 400);
     }
 
+    // --- KIỂM TRA NGÀY TRẢ ---
+    const maxBorrowDays = await getSetting('max_borrow_days', 14);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDateTime = new Date(due_date);
+    dueDateTime.setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((dueDateTime - today) / (1000 * 60 * 60 * 24));
+
+    if (diffDays > maxBorrowDays) {
+        throw new AppError(`Ngày trả vượt quá số ngày mượn tối đa (${maxBorrowDays} ngày). Vui lòng chọn ngày trả sớm hơn.`, 400);
+    }
+    if (diffDays < 1) {
+        throw new AppError('Ngày trả phải sau ngày hôm nay', 400);
+    }
+
     // Kiểm tra số sách đang mượn
     const currentBorrowed = await BorrowDetail.count({
         include: [{
@@ -567,7 +582,7 @@ const extendBorrowRequest = asyncHandler(async (req, res) => {
     // Validate: ngày hạn mới phải sau ngày hạn hiện tại
     const currentDueDate = new Date(borrowRequest.due_date);
     const newDueDate = new Date(new_due_date);
-    
+
     if (newDueDate <= currentDueDate) {
         throw new AppError('Ngày hẹn trả mới phải sau ngày hạn hiện tại', 400);
     }
@@ -576,7 +591,7 @@ const extendBorrowRequest = asyncHandler(async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     newDueDate.setHours(0, 0, 0, 0);
-    
+
     if (newDueDate <= today) {
         throw new AppError('Ngày hẹn trả mới phải sau ngày hiện tại', 400);
     }
@@ -655,7 +670,7 @@ const returnBooks = asyncHandler(async (req, res) => {
 
             // Lấy thông tin bản sách để tính phạt và cập nhật trạng thái
             const bookCopy = await BookCopy.findByPk(book_copy_id);
-            
+
             // Tính tiền phạt quá hạn
             const dueDate = new Date(borrowRequest.due_date);
             const diffTime = today - dueDate;
@@ -675,7 +690,7 @@ const returnBooks = asyncHandler(async (req, res) => {
 
             // Xác định trạng thái mới của sách và phạt (nếu có)
             let newStatus = 'available'; // Mặc định: trả về available (tăng lại số lượng)
-            
+
             if (return_condition === 'damaged') {
                 // Sách hỏng → status = 'damaged' (không tăng available)
                 newStatus = 'damaged';
@@ -701,7 +716,7 @@ const returnBooks = asyncHandler(async (req, res) => {
                 }, { transaction });
                 finesCreated.push(fine);
             }
-            
+
             // Cập nhật trạng thái sách (available/damaged/disposed)
             await bookCopy.update({ status: newStatus }, { transaction });
         }

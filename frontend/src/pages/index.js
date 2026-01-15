@@ -34,9 +34,13 @@ export { AdminPage } from './admin';
 // Notifications
 export { NotificationPage } from './notifications';
 
+// Categories
+export { CategoryPage } from './categories';
+
 // Reader pages
 export { MyBooksPage, SearchPage, MyFinancePage } from './reader';
 
 // Error pages
 export { default as UnauthorizedPage } from './UnauthorizedPage';
 export { default as NotFoundPage } from './NotFoundPage';
+

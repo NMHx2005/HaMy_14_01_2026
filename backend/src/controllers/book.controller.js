@@ -12,6 +12,7 @@
 const {
     Book, BookAuthor, BookEdition, BookCopy,
     Field, Genre, Author, Publisher,
+    BorrowDetail, BorrowRequest, LibraryCard, Reader,
     sequelize
 } = require('../models');
 const { asyncHandler, AppError } = require('../middlewares/errorHandler');
@@ -101,7 +102,7 @@ const getBooks = asyncHandler(async (req, res) => {
     // Tính số lượng bản sách cho mỗi sách
     const booksWithCounts = await Promise.all(rows.map(async (book) => {
         const bookJson = book.toJSON();
-        
+
         // Đếm tổng số bản sách và số bản có sẵn
         const totalCopies = await BookCopy.count({
             include: [{
@@ -142,7 +143,7 @@ const getBooks = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Lấy chi tiết sách (bao gồm editions, copies, authors)
+ * @desc    Lấy chi tiết sách (bao gồm editions, copies, authors, borrower info)
  * @route   GET /api/books/:id
  * @access  Public
  */
@@ -208,10 +209,73 @@ const getBookById = asyncHandler(async (req, res) => {
         where: { status: 'available' }
     });
 
+    // Lấy thông tin người đang mượn cho các bản sách "borrowed"
+    const bookData = book.toJSON();
+
+    // Collect all borrowed copy ids
+    const borrowedCopyIds = [];
+    bookData.editions?.forEach(edition => {
+        edition.copies?.forEach(copy => {
+            if (copy.status === 'borrowed') {
+                borrowedCopyIds.push(copy.id);
+            }
+        });
+    });
+
+    // Fetch borrower info for borrowed copies
+    const borrowerMap = {};
+    if (borrowedCopyIds.length > 0) {
+        const borrowDetails = await BorrowDetail.findAll({
+            where: {
+                book_copy_id: { [Op.in]: borrowedCopyIds },
+                actual_return_date: null // Chưa trả
+            },
+            include: [{
+                model: BorrowRequest,
+                as: 'borrowRequest',
+                where: { status: { [Op.in]: ['borrowed', 'overdue'] } },
+                attributes: ['id', 'borrow_date', 'due_date', 'status'],
+                include: [{
+                    model: LibraryCard,
+                    as: 'libraryCard',
+                    attributes: ['id'],
+                    include: [{
+                        model: Reader,
+                        as: 'reader',
+                        attributes: ['id', 'full_name', 'phone']
+                    }]
+                }]
+            }]
+        });
+
+        borrowDetails.forEach(detail => {
+            const reader = detail.borrowRequest?.libraryCard?.reader;
+            if (reader) {
+                borrowerMap[detail.book_copy_id] = {
+                    id: reader.id,
+                    name: reader.full_name,
+                    phone: reader.phone,
+                    borrow_date: detail.borrowRequest.borrow_date,
+                    due_date: detail.borrowRequest.due_date,
+                    request_status: detail.borrowRequest.status
+                };
+            }
+        });
+    }
+
+    // Gắn thông tin borrower vào copies
+    bookData.editions = bookData.editions?.map(edition => ({
+        ...edition,
+        copies: edition.copies?.map(copy => ({
+            ...copy,
+            borrower: borrowerMap[copy.id] || null
+        }))
+    }));
+
     res.json({
         success: true,
         data: {
-            ...book.toJSON(),
+            ...bookData,
             total_copies: totalCopies,
             available_copies: availableCopies
         }
@@ -407,9 +471,72 @@ const getEditions = asyncHandler(async (req, res) => {
         order: [['publish_year', 'DESC']]
     });
 
+    // Lấy thông tin người đang mượn cho các bản sách "borrowed"
+    const editionsData = editions.map(e => e.toJSON());
+
+    // Collect all borrowed copy ids
+    const borrowedCopyIds = [];
+    editionsData.forEach(edition => {
+        edition.copies?.forEach(copy => {
+            if (copy.status === 'borrowed') {
+                borrowedCopyIds.push(copy.id);
+            }
+        });
+    });
+
+    // Fetch borrower info for borrowed copies
+    const borrowerMap = {};
+    if (borrowedCopyIds.length > 0) {
+        const borrowDetails = await BorrowDetail.findAll({
+            where: {
+                book_copy_id: { [Op.in]: borrowedCopyIds },
+                actual_return_date: null
+            },
+            include: [{
+                model: BorrowRequest,
+                as: 'borrowRequest',
+                where: { status: { [Op.in]: ['borrowed', 'overdue'] } },
+                attributes: ['id', 'borrow_date', 'due_date', 'status'],
+                include: [{
+                    model: LibraryCard,
+                    as: 'libraryCard',
+                    attributes: ['id'],
+                    include: [{
+                        model: Reader,
+                        as: 'reader',
+                        attributes: ['id', 'full_name', 'phone']
+                    }]
+                }]
+            }]
+        });
+
+        borrowDetails.forEach(detail => {
+            const reader = detail.borrowRequest?.libraryCard?.reader;
+            if (reader) {
+                borrowerMap[detail.book_copy_id] = {
+                    id: reader.id,
+                    name: reader.full_name,
+                    phone: reader.phone,
+                    borrow_date: detail.borrowRequest.borrow_date,
+                    due_date: detail.borrowRequest.due_date,
+                    request_status: detail.borrowRequest.status
+                };
+            }
+        });
+    }
+
+    // Gắn thông tin borrower vào copies
+    const result = editionsData.map(edition => ({
+        ...edition,
+        copies: edition.copies?.map(copy => ({
+            ...copy,
+            borrower: borrowerMap[copy.id] || null
+        }))
+    }));
+
     res.json({
         success: true,
-        data: editions
+        data: result
     });
 });
 
@@ -522,11 +649,11 @@ const deleteEdition = asyncHandler(async (req, res) => {
 const getAllCopies = asyncHandler(async (req, res) => {
     const { edition_id, status, limit = 100 } = req.query;
     const where = {};
-    
+
     if (edition_id) {
         where.book_edition_id = edition_id;
     }
-    
+
     // Reader chỉ được xem available copies
     if (req.user.role === 'reader') {
         where.status = 'available';
@@ -564,7 +691,7 @@ const getAllCopies = asyncHandler(async (req, res) => {
 const getCopies = asyncHandler(async (req, res) => {
     const { status } = req.query;
     const where = { book_edition_id: req.params.editionId };
-    
+
     // Filter theo status nếu có
     if (status) {
         where.status = status;

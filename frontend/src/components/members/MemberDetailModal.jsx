@@ -135,7 +135,7 @@ const MemberDetailModal = ({ isOpen, onClose, member }) => {
                             </div>
                             <div className="bg-gray-50 rounded-lg p-3">
                                 <p className="text-lg font-bold text-gray-900">{(card.deposit_amount || 0).toLocaleString('vi-VN')}</p>
-                                <p className="text-xs text-gray-500">Tiền cọc (₫)</p>
+                                <p className="text-xs text-gray-500">Tiền cọc (VNĐ)</p>
                             </div>
                             <div className="bg-gray-50 rounded-lg p-3">
                                 <p className="text-lg font-bold text-gray-900">{formatDate(card.expiry_date)}</p>

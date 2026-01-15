@@ -25,9 +25,16 @@ const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
     const [books, setBooks] = useState([]);
     const [selectedBooks, setSelectedBooks] = useState([]);
 
+    // Edition selection modal
+    const [showEditionModal, setShowEditionModal] = useState(false);
+    const [pendingBook, setPendingBook] = useState(null);
+    const [editions, setEditions] = useState([]);
+    const [editionsLoading, setEditionsLoading] = useState(false);
+
     // Borrow details
     const [dueDate, setDueDate] = useState('');
     const [notes, setNotes] = useState('');
+    const [maxBorrowDays, setMaxBorrowDays] = useState(14); // Default, will be fetched from settings
 
     // Search readers
     useEffect(() => {
@@ -75,12 +82,30 @@ const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
         return () => clearTimeout(timer);
     }, [bookSearch, step]);
 
-    // Set default due date (14 days from now)
+    // Fetch settings and set default due date based on max_borrow_days
     useEffect(() => {
         if (isOpen) {
-            const defaultDue = new Date();
-            defaultDue.setDate(defaultDue.getDate() + 14);
-            setDueDate(defaultDue.toISOString().split('T')[0]);
+            const loadSettings = async () => {
+                try {
+                    const response = await api.get('/system/settings');
+                    const settings = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
+                    const maxDays = settings.find(s => s.setting_key === 'max_borrow_days');
+                    const days = maxDays ? parseInt(maxDays.setting_value) : 14;
+                    setMaxBorrowDays(days);
+
+                    // Set default due date
+                    const defaultDue = new Date();
+                    defaultDue.setDate(defaultDue.getDate() + days);
+                    setDueDate(defaultDue.toISOString().split('T')[0]);
+                } catch (error) {
+                    console.error('Load settings error:', error);
+                    // Fallback to 14 days
+                    const defaultDue = new Date();
+                    defaultDue.setDate(defaultDue.getDate() + 14);
+                    setDueDate(defaultDue.toISOString().split('T')[0]);
+                }
+            };
+            loadSettings();
         }
     }, [isOpen]);
 
@@ -90,53 +115,84 @@ const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
     };
 
     const handleSelectBook = async (book) => {
-        // Get available copies for this book
+        // Fetch editions with available copies for this book
         try {
-            // Check if book has editions with available copies
-            const editionsResponse = await api.get(`/books/${book.id}/editions`);
-            // Response có thể là { success, data } hoặc array trực tiếp
-            const editions = Array.isArray(editionsResponse?.data) ? editionsResponse.data : (Array.isArray(editionsResponse) ? editionsResponse : []);
+            setEditionsLoading(true);
+            setPendingBook(book);
+            setBookSearch('');
+            setBooks([]);
 
-            if (editions.length === 0) {
+            const editionsResponse = await api.get(`/books/${book.id}/editions`);
+            const editionsData = Array.isArray(editionsResponse?.data) ? editionsResponse.data : (Array.isArray(editionsResponse) ? editionsResponse : []);
+
+            if (editionsData.length === 0) {
                 toast.error('Sách này chưa có phiên bản nào');
+                setPendingBook(null);
                 return;
             }
 
-            // Get copies from first edition that has available copies
-            for (const edition of editions) {
-                const copiesResponse = await api.get(`/copies`, {
-                    params: { edition_id: edition.id, status: 'available', limit: 1 }
-                });
-                // Response có thể là { success, data } hoặc array trực tiếp
-                const copies = Array.isArray(copiesResponse?.data) ? copiesResponse.data : (Array.isArray(copiesResponse) ? copiesResponse : []);
+            // Fetch available copies count for each edition
+            const editionsWithCopies = await Promise.all(
+                editionsData.map(async (edition) => {
+                    const copiesResponse = await api.get(`/copies`, {
+                        params: { edition_id: edition.id, status: 'available' }
+                    });
+                    const copies = Array.isArray(copiesResponse?.data) ? copiesResponse.data : (Array.isArray(copiesResponse) ? copiesResponse : []);
+                    return {
+                        ...edition,
+                        availableCopies: copies
+                    };
+                })
+            );
 
-                if (copies.length > 0) {
-                    const copy = copies[0];
-                    // Check if already selected
-                    if (selectedBooks.find(b => b.copyId === copy.id)) {
-                        toast.error('Bản sách này đã được chọn');
-                        return;
-                    }
+            // Filter editions that have available copies
+            const availableEditions = editionsWithCopies.filter(e => e.availableCopies.length > 0);
 
-                    setSelectedBooks(prev => [...prev, {
-                        copyId: copy.id,
-                        bookId: book.id,
-                        title: book.title,
-                        code: book.code,
-                        editionId: edition.id
-                    }]);
-                    setBookSearch('');
-                    setBooks([]);
-                    toast.success(`Đã thêm: ${book.title}`);
-                    return;
-                }
+            if (availableEditions.length === 0) {
+                toast.error('Sách này đã hết bản có sẵn');
+                setPendingBook(null);
+                return;
             }
 
-            toast.error('Sách này đã hết bản có sẵn');
+            setEditions(availableEditions);
+            setShowEditionModal(true);
         } catch (error) {
-            console.error('Get copies error:', error);
-            toast.error('Không thể lấy thông tin sách');
+            console.error('Get editions error:', error);
+            toast.error('Không thể lấy thông tin phiên bản');
+            setPendingBook(null);
+        } finally {
+            setEditionsLoading(false);
         }
+    };
+
+    const handleSelectEdition = (edition, copy) => {
+        // Check if already selected
+        if (selectedBooks.find(b => b.copyId === copy.id)) {
+            toast.error('Bản sách này đã được chọn');
+            return;
+        }
+
+        setSelectedBooks(prev => [...prev, {
+            copyId: copy.id,
+            bookId: pendingBook.id,
+            title: pendingBook.title,
+            code: pendingBook.code,
+            editionId: edition.id,
+            publisher: edition.publisher?.name || 'Không rõ NXB',
+            publishYear: edition.publish_year,
+            copyNumber: copy.copy_number
+        }]);
+
+        toast.success(`Đã thêm: ${pendingBook.title} - ${edition.publisher?.name || 'NXB'} (Bản #${copy.copy_number})`);
+        setShowEditionModal(false);
+        setPendingBook(null);
+        setEditions([]);
+    };
+
+    const handleCloseEditionModal = () => {
+        setShowEditionModal(false);
+        setPendingBook(null);
+        setEditions([]);
     };
 
     const handleRemoveBook = (copyId) => {
@@ -173,10 +229,10 @@ const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
             handleClose();
         } catch (error) {
             console.error('Create borrow error:', error);
-            
+
             // Xử lý lỗi chi tiết
             const errorData = error.response?.data;
-            
+
             // Nếu có mảng errors (validation errors)
             if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
                 // Hiển thị từng lỗi validation
@@ -274,7 +330,7 @@ const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
                                         // Kiểm tra nếu thẻ đã hết hạn dựa trên expiry_date
                                         const isExpired = reader.libraryCard.expiry_date && new Date(reader.libraryCard.expiry_date) < new Date();
                                         const isActive = reader.libraryCard.status === 'active' && !isExpired;
-                                        
+
                                         return (
                                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${isActive
                                                 ? 'bg-green-100 text-green-800'
@@ -422,9 +478,16 @@ const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
                         <div className="border-t border-gray-200 pt-4">
                             <p className="text-sm font-medium text-gray-700 mb-2">Sách mượn ({selectedBooks.length})</p>
                             {selectedBooks.map((book) => (
-                                <div key={book.copyId} className="flex items-center gap-2 text-sm text-gray-600 py-1">
-                                    <HiOutlineBookOpen className="w-4 h-4" />
-                                    {book.title}
+                                <div key={book.copyId} className="flex items-center justify-between text-sm py-2 px-3 bg-gray-50 rounded-lg mb-1">
+                                    <div className="flex items-center gap-2">
+                                        <HiOutlineBookOpen className="w-4 h-4 text-gray-400" />
+                                        <div>
+                                            <span className="text-gray-900">{book.title}</span>
+                                            <span className="text-gray-500 text-xs ml-2">
+                                                {book.publisher} ({book.publishYear}) - Bản #{book.copyNumber}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -473,6 +536,80 @@ const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
                             )}
                             Tạo phiếu mượn
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Edition Selection Modal */}
+            {showEditionModal && pendingBook && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[80vh] overflow-hidden">
+                        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900">Chọn phiên bản sách</h3>
+                                <p className="text-sm text-gray-500">{pendingBook.title}</p>
+                            </div>
+                            <button
+                                onClick={handleCloseEditionModal}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <HiOutlineX className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+
+                        <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
+                            {editionsLoading ? (
+                                <div className="flex justify-center py-8">
+                                    <div className="w-8 h-8 border-4 border-gray-300 border-t-black rounded-full animate-spin" />
+                                </div>
+                            ) : editions.length > 0 ? (
+                                editions.map((edition) => (
+                                    <div key={edition.id} className="border border-gray-200 rounded-xl p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div>
+                                                <p className="font-semibold text-gray-900">
+                                                    {edition.publisher?.name || 'Không rõ NXB'}
+                                                </p>
+                                                <p className="text-sm text-gray-500">
+                                                    Năm {edition.publish_year} | ISBN: {edition.isbn || '-'}
+                                                </p>
+                                            </div>
+                                            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                                                {edition.availableCopies.length} bản có sẵn
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {edition.availableCopies.slice(0, 6).map((copy) => {
+                                                const isAlreadySelected = selectedBooks.find(b => b.copyId === copy.id);
+                                                return (
+                                                    <button
+                                                        key={copy.id}
+                                                        onClick={() => !isAlreadySelected && handleSelectEdition(edition, copy)}
+                                                        disabled={isAlreadySelected}
+                                                        className={`p-2 rounded-lg text-sm font-medium transition-colors ${isAlreadySelected
+                                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                            : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                                                            }`}
+                                                    >
+                                                        Bản #{copy.copy_number}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        {edition.availableCopies.length > 6 && (
+                                            <p className="text-xs text-gray-400 mt-2 text-center">
+                                                Và {edition.availableCopies.length - 6} bản khác...
+                                            </p>
+                                        )}
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center py-8 text-gray-500">
+                                    Không có phiên bản nào có sẵn
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

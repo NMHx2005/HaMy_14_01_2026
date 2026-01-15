@@ -47,6 +47,13 @@ router.put('/fines/:id/pay', authenticate, staffOnly, idParamValidator, validate
  */
 router.put('/fines/pay-all/:borrowRequestId', authenticate, staffOnly, financeController.payAllFines);
 
+/**
+ * @route   DELETE /api/fines/:id
+ * @desc    Xóa phiếu phạt (Admin only)
+ * @access  Admin
+ */
+router.delete('/fines/:id', authenticate, staffOnly, idParamValidator, validate, financeController.deleteFine);
+
 // ===================================================================
 // DEPOSIT (Tiền đặt cọc) ROUTES
 // ===================================================================

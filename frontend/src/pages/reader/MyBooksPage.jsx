@@ -14,14 +14,23 @@ import {
     HiOutlineRefresh,
     HiOutlineExclamationCircle,
     HiOutlineCheckCircle,
-    HiOutlineClock
+    HiOutlineClock,
+    HiOutlineTrash
 } from 'react-icons/hi';
+import { ConfirmModal } from '../../components';
 
 const MyBooksPage = () => {
     const { user } = useAuth();
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('borrowed');
+    const [cancellingId, setCancellingId] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({
+        open: false,
+        requestId: null,
+        title: '',
+        message: ''
+    });
 
     /**
      * Fetch my borrow requests
@@ -55,6 +64,35 @@ const MyBooksPage = () => {
     const formatDate = (dateStr) => {
         if (!dateStr) return '-';
         return new Date(dateStr).toLocaleDateString('vi-VN');
+    };
+
+    /**
+     * Handle cancel pending request
+     */
+    const handleCancelRequest = (request) => {
+        setConfirmModal({
+            open: true,
+            requestId: request.id,
+            title: 'Hủy yêu cầu mượn sách',
+            message: `Bạn có chắc chắn muốn hủy yêu cầu mượn #${request.id}?`
+        });
+    };
+
+    const confirmCancelRequest = async () => {
+        const requestId = confirmModal.requestId;
+        if (!requestId) return;
+
+        try {
+            setCancellingId(requestId);
+            await api.delete(`/borrow-requests/${requestId}`);
+            toast.success('Hủy yêu cầu thành công');
+            setConfirmModal({ open: false, requestId: null, title: '', message: '' });
+            fetchMyRequests();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Lỗi hủy yêu cầu');
+        } finally {
+            setCancellingId(null);
+        }
     };
 
     const getStatusInfo = (status, dueDate) => {
@@ -188,8 +226,8 @@ const MyBooksPage = () => {
                 <button
                     onClick={() => setActiveTab('borrowed')}
                     className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === 'borrowed'
-                            ? 'border-black text-black'
-                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                        ? 'border-black text-black'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
                         }`}
                 >
                     Đang mượn ({borrowedCount})
@@ -197,8 +235,8 @@ const MyBooksPage = () => {
                 <button
                     onClick={() => setActiveTab('pending')}
                     className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === 'pending'
-                            ? 'border-black text-black'
-                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                        ? 'border-black text-black'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
                         }`}
                 >
                     Chờ xử lý ({pendingCount})
@@ -206,8 +244,8 @@ const MyBooksPage = () => {
                 <button
                     onClick={() => setActiveTab('history')}
                     className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === 'history'
-                            ? 'border-black text-black'
-                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                        ? 'border-black text-black'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
                         }`}
                 >
                     Lịch sử
@@ -242,7 +280,7 @@ const MyBooksPage = () => {
                                             const bookCode = detail.bookCopy?.bookEdition?.book?.code || '';
                                             const copyNumber = detail.bookCopy?.copy_number || '';
                                             const isReturned = detail.actual_return_date !== null;
-                                            
+
                                             return (
                                                 <div key={detail.id || idx} className={`flex items-center gap-3 rounded-xl p-3 ${isReturned ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}`}>
                                                     <HiOutlineBookOpen className={`w-5 h-5 ${isReturned ? 'text-green-600' : 'text-gray-400'}`} />
@@ -288,8 +326,8 @@ const MyBooksPage = () => {
                                         <div>
                                             <span className="text-gray-500">Hạn trả: </span>
                                             <span className={`font-medium ${new Date(request.due_date) < new Date() && ['borrowed', 'overdue'].includes(request.status)
-                                                    ? 'text-red-600'
-                                                    : 'text-gray-900'
+                                                ? 'text-red-600'
+                                                : 'text-gray-900'
                                                 }`}>
                                                 {formatDate(request.due_date)}
                                             </span>
@@ -323,6 +361,24 @@ const MyBooksPage = () => {
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Cancel button for pending requests */}
+                                {request.status === 'pending' && (
+                                    <div className="mt-4 pt-4 border-t border-gray-200">
+                                        <button
+                                            onClick={() => handleCancelRequest(request)}
+                                            disabled={cancellingId === request.id}
+                                            className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium flex items-center gap-2 disabled:opacity-50"
+                                        >
+                                            {cancellingId === request.id ? (
+                                                <div className="w-4 h-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
+                                            ) : (
+                                                <HiOutlineTrash className="w-4 h-4" />
+                                            )}
+                                            Hủy yêu cầu
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         );
                     })
@@ -338,8 +394,21 @@ const MyBooksPage = () => {
                     </div>
                 )}
             </div>
+
+            {/* Confirm Cancel Modal */}
+            <ConfirmModal
+                isOpen={confirmModal.open}
+                onClose={() => setConfirmModal({ open: false, requestId: null, title: '', message: '' })}
+                onConfirm={confirmCancelRequest}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText="Hủy yêu cầu"
+                cancelText="Quay lại"
+                type="danger"
+            />
         </div>
     );
 };
 
 export default MyBooksPage;
+

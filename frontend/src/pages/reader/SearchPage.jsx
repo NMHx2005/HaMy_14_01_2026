@@ -29,8 +29,11 @@ const SearchPage = () => {
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [fields, setFields] = useState([]);
     const [genres, setGenres] = useState([]);
+    const [publishers, setPublishers] = useState([]);
     const [selectedField, setSelectedField] = useState('');
     const [selectedGenre, setSelectedGenre] = useState('');
+    const [selectedPublisher, setSelectedPublisher] = useState('');
+    const [selectedYear, setSelectedYear] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [pagination, setPagination] = useState({
         page: 1, limit: 12, total: 0, totalPages: 0
@@ -54,12 +57,14 @@ const SearchPage = () => {
     useEffect(() => {
         const loadFilters = async () => {
             try {
-                const [fieldsRes, genresRes] = await Promise.all([
+                const [fieldsRes, genresRes, publishersRes] = await Promise.all([
                     api.get('/fields'),
-                    api.get('/genres')
+                    api.get('/genres'),
+                    api.get('/publishers')
                 ]);
                 setFields(fieldsRes.data || []);
                 setGenres(genresRes.data || []);
+                setPublishers(publishersRes.data || []);
             } catch (error) {
                 console.error('Load filters error:', error);
             }
@@ -78,6 +83,8 @@ const SearchPage = () => {
             if (searchQuery) params.keyword = searchQuery;
             if (selectedField) params.field_id = selectedField;
             if (selectedGenre) params.genre_id = selectedGenre;
+            if (selectedPublisher) params.publisher_id = selectedPublisher;
+            if (selectedYear) params.publish_year = selectedYear;
 
             const response = await api.get('/books', { params });
             // Response có thể là { success, data, pagination } hoặc data trực tiếp
@@ -96,7 +103,7 @@ const SearchPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [pagination.page, pagination.limit, searchQuery, selectedField, selectedGenre]);
+    }, [pagination.page, pagination.limit, searchQuery, selectedField, selectedGenre, selectedPublisher, selectedYear]);
 
     useEffect(() => {
         fetchBooks();
@@ -105,11 +112,13 @@ const SearchPage = () => {
     // Reset page when filters change
     useEffect(() => {
         setPagination(prev => ({ ...prev, page: 1 }));
-    }, [selectedField, selectedGenre]);
+    }, [selectedField, selectedGenre, selectedPublisher, selectedYear]);
 
     const clearFilters = () => {
         setSelectedField('');
         setSelectedGenre('');
+        setSelectedPublisher('');
+        setSelectedYear('');
         setDebouncedSearch('');
     };
 
@@ -148,7 +157,7 @@ const SearchPage = () => {
 
                 {showFilters && (
                     <div className="bg-gray-50 rounded-xl p-4 flex flex-wrap items-end gap-4">
-                        <div className="min-w-[200px]">
+                        <div className="min-w-[180px]">
                             <label className="block text-sm font-medium text-gray-700 mb-2">Lĩnh vực</label>
                             <select
                                 value={selectedField}
@@ -161,7 +170,7 @@ const SearchPage = () => {
                                 ))}
                             </select>
                         </div>
-                        <div className="min-w-[200px]">
+                        <div className="min-w-[180px]">
                             <label className="block text-sm font-medium text-gray-700 mb-2">Thể loại</label>
                             <select
                                 value={selectedGenre}
@@ -174,7 +183,32 @@ const SearchPage = () => {
                                 ))}
                             </select>
                         </div>
-                        {(selectedField || selectedGenre || debouncedSearch) && (
+                        <div className="min-w-[180px]">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Nhà xuất bản</label>
+                            <select
+                                value={selectedPublisher}
+                                onChange={(e) => setSelectedPublisher(e.target.value)}
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-sm"
+                            >
+                                <option value="">Tất cả</option>
+                                {publishers.map((p) => (
+                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="min-w-[120px]">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Năm XB</label>
+                            <input
+                                type="number"
+                                placeholder="VD: 2023"
+                                value={selectedYear}
+                                onChange={(e) => setSelectedYear(e.target.value)}
+                                min="1900"
+                                max={new Date().getFullYear()}
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-sm"
+                            />
+                        </div>
+                        {(selectedField || selectedGenre || selectedPublisher || selectedYear || debouncedSearch) && (
                             <button
                                 onClick={clearFilters}
                                 className="px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg"

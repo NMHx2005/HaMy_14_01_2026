@@ -378,6 +378,15 @@ const createLibraryCard = asyncHandler(async (req, res) => {
         throw new AppError('Độc giả đã có thẻ thư viện', 400);
     }
 
+    // Kiểm tra số tiền cọc tối thiểu từ SystemSetting
+    const { SystemSetting } = require('../models');
+    const minDepositSetting = await SystemSetting.findOne({ where: { setting_key: 'min_deposit_amount' } });
+    const minDepositAmount = minDepositSetting ? parseInt(minDepositSetting.setting_value) : defaultDepositAmount;
+
+    if (deposit_amount < minDepositAmount) {
+        throw new AppError(`Tiền cọc tối thiểu là ${minDepositAmount.toLocaleString('vi-VN')} VNĐ`, 400);
+    }
+
     const transaction = await sequelize.transaction();
 
     try {

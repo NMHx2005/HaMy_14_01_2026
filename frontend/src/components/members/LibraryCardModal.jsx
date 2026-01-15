@@ -13,37 +13,77 @@ import { HiOutlineCreditCard, HiOutlineCalendar } from 'react-icons/hi';
 const LibraryCardModal = ({ isOpen, onClose, onSuccess, member, card = null }) => {
     const isEdit = !!card;
     const [submitting, setSubmitting] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const [formData, setFormData] = useState({
         expiry_date: '',
         max_books: 5,
         max_borrow_days: 14,
-        deposit_amount: 100000
+        deposit_amount: 200000
     });
 
-    // Set default or existing values
+    // Giá trị mặc định từ Settings
+    const [defaults, setDefaults] = useState({
+        min_deposit_amount: 200000,
+        max_books_per_user: 5,
+        max_borrow_days: 14
+    });
+
+    // Load system settings
     useEffect(() => {
-        if (isOpen) {
-            if (card) {
-                setFormData({
-                    expiry_date: card.expiry_date ? card.expiry_date.split('T')[0] : '',
-                    max_books: card.max_books || 5,
-                    max_borrow_days: card.max_borrow_days || 14,
-                    deposit_amount: card.deposit_amount || 100000
-                });
-            } else {
-                // Default expiry date (1 year from now)
-                const oneYearFromNow = new Date();
-                oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
-                setFormData({
-                    expiry_date: oneYearFromNow.toISOString().split('T')[0],
-                    max_books: 5,
-                    max_borrow_days: 14,
-                    deposit_amount: 100000
-                });
-            }
+        if (isOpen && !isEdit) {
+            const loadSettings = async () => {
+                try {
+                    setLoading(true);
+                    const response = await api.get('/system/settings');
+                    const settings = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
+
+                    const getValue = (key, defaultVal) => {
+                        const setting = settings.find(s => s.setting_key === key);
+                        return setting ? parseInt(setting.setting_value) : defaultVal;
+                    };
+
+                    const newDefaults = {
+                        min_deposit_amount: getValue('min_deposit_amount', 200000),
+                        max_books_per_user: getValue('max_books_per_user', 5),
+                        max_borrow_days: getValue('max_borrow_days', 14)
+                    };
+                    setDefaults(newDefaults);
+
+                    // Set form data with defaults
+                    const oneYearFromNow = new Date();
+                    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+                    setFormData({
+                        expiry_date: oneYearFromNow.toISOString().split('T')[0],
+                        max_books: newDefaults.max_books_per_user,
+                        max_borrow_days: newDefaults.max_borrow_days,
+                        deposit_amount: newDefaults.min_deposit_amount
+                    });
+                } catch (error) {
+                    console.error('Load settings error:', error);
+                    // Sử dụng giá trị mặc định cứng nếu API lỗi
+                    const oneYearFromNow = new Date();
+                    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+                    setFormData({
+                        expiry_date: oneYearFromNow.toISOString().split('T')[0],
+                        max_books: 5,
+                        max_borrow_days: 14,
+                        deposit_amount: 200000
+                    });
+                } finally {
+                    setLoading(false);
+                }
+            };
+            loadSettings();
+        } else if (isOpen && isEdit && card) {
+            setFormData({
+                expiry_date: card.expiry_date ? card.expiry_date.split('T')[0] : '',
+                max_books: card.max_books || 5,
+                max_borrow_days: card.max_borrow_days || 14,
+                deposit_amount: card.deposit_amount || 200000
+            });
         }
-    }, [isOpen, card]);
+    }, [isOpen, card, isEdit]);
 
     const handleChange = (e) => {
         const { name, value, type } = e.target;
@@ -58,6 +98,12 @@ const LibraryCardModal = ({ isOpen, onClose, onSuccess, member, card = null }) =
 
         if (!formData.expiry_date) {
             toast.error('Vui lòng chọn ngày hết hạn');
+            return;
+        }
+
+        // Validate deposit amount
+        if (!isEdit && formData.deposit_amount < defaults.min_deposit_amount) {
+            toast.error(`Tiền cọc tối thiểu là ${defaults.min_deposit_amount.toLocaleString('vi-VN')} VNĐ`);
             return;
         }
 
@@ -164,16 +210,29 @@ const LibraryCardModal = ({ isOpen, onClose, onSuccess, member, card = null }) =
                 {/* Deposit (only for create) */}
                 {!isEdit && (
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Tiền đặt cọc (₫)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Tiền đặt cọc <span className="text-red-500">*</span>
+                        </label>
                         <input
                             type="number"
                             name="deposit_amount"
                             value={formData.deposit_amount}
                             onChange={handleChange}
-                            min={0}
+                            min={defaults.min_deposit_amount}
                             step={10000}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
+                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-black focus:border-transparent ${formData.deposit_amount < defaults.min_deposit_amount
+                                ? 'border-red-300 bg-red-50'
+                                : 'border-gray-300'
+                                }`}
                         />
+                        <p className="text-xs text-gray-500 mt-1">
+                            Tối thiểu: {defaults.min_deposit_amount.toLocaleString('vi-VN')} VNĐ
+                        </p>
+                        {formData.deposit_amount < defaults.min_deposit_amount && (
+                            <p className="text-xs text-red-500 mt-1">
+                                ⚠️ Tiền cọc phải ≥ {defaults.min_deposit_amount.toLocaleString('vi-VN')} VNĐ
+                            </p>
+                        )}
                     </div>
                 )}
 

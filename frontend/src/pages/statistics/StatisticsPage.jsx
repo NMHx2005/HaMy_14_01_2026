@@ -92,7 +92,7 @@ const StatisticsPage = () => {
     }, [activeTab]);
 
     const formatCurrency = (amount) => {
-        return (amount || 0).toLocaleString('vi-VN') + ' ₫';
+        return (amount || 0).toLocaleString('vi-VN') + ' VNĐ';
     };
 
     if (loading) {

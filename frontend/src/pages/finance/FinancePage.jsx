@@ -25,6 +25,7 @@ import {
     HiOutlineArrowDown
 } from 'react-icons/hi';
 import { ConfirmModal } from '../../components';
+import { useAuth } from '../../contexts/AuthContext';
 
 /**
  * FinancePage Component
@@ -57,6 +58,10 @@ const FinancePage = () => {
     });
     const [actionLoading, setActionLoading] = useState(false);
 
+    // Check user role for Admin-specific actions
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'admin';
+
     /**
      * Fetch fines
      */
@@ -73,7 +78,7 @@ const FinancePage = () => {
             // Response có thể là { success, data, pagination, summary } hoặc data trực tiếp
             const finesData = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
             const paginationData = response?.pagination || {};
-            
+
             setFines(finesData);
             setFinesSummary(response?.summary || { totalPending: 0, totalPaid: 0 });
             setFinesPagination(prev => ({
@@ -105,7 +110,7 @@ const FinancePage = () => {
             // Response có thể là { success, data, pagination } hoặc data trực tiếp
             const depositsData = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
             const paginationData = response?.pagination || {};
-            
+
             setDeposits(depositsData);
             setDepositsPagination(prev => ({
                 ...prev,
@@ -143,7 +148,7 @@ const FinancePage = () => {
         setConfirmModal({
             open: true,
             title: 'Thanh toán tiền phạt',
-            message: `Xác nhận thanh toán ${fine.amount?.toLocaleString('vi-VN')} ₫ tiền phạt?`,
+            message: `Xác nhận thanh toán ${fine.amount?.toLocaleString('vi-VN')} VNĐ tiền phạt?`,
             type: 'success',
             onConfirm: async () => {
                 try {
@@ -154,6 +159,32 @@ const FinancePage = () => {
                     fetchFines();
                 } catch (error) {
                     toast.error(error.message || 'Lỗi thanh toán');
+                } finally {
+                    setActionLoading(false);
+                }
+            }
+        });
+    };
+
+    /**
+     * Delete fine (Admin only)
+     */
+    const handleDeleteFine = (fine) => {
+        setConfirmModal({
+            open: true,
+            title: 'Xóa phiếu phạt',
+            message: `Bạn có chắc chắn muốn xóa phiếu phạt này? Số tiền: ${fine.amount?.toLocaleString('vi-VN')} VNĐ`,
+            type: 'danger',
+            onConfirm: async () => {
+                try {
+                    setActionLoading(true);
+                    const { api } = await import('../../services');
+                    await api.delete(`/fines/${fine.id}`);
+                    toast.success('Xóa phiếu phạt thành công');
+                    setConfirmModal({ ...confirmModal, open: false });
+                    fetchFines();
+                } catch (error) {
+                    toast.error(error.response?.data?.message || 'Lỗi xóa phiếu phạt');
                 } finally {
                     setActionLoading(false);
                 }
@@ -173,7 +204,7 @@ const FinancePage = () => {
      * Format currency
      */
     const formatCurrency = (amount) => {
-        return (amount || 0).toLocaleString('vi-VN') + ' ₫';
+        return (amount || 0).toLocaleString('vi-VN') + ' VNĐ';
     };
 
     return (
@@ -369,12 +400,26 @@ const FinancePage = () => {
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 {fine.status === 'pending' && (
-                                                    <button
-                                                        onClick={() => handlePayFine(fine)}
-                                                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                                                    >
-                                                        Thu tiền
-                                                    </button>
+                                                    <>
+                                                        {/* Librarian: Thu tiền phạt */}
+                                                        {!isAdmin && (
+                                                            <button
+                                                                onClick={() => handlePayFine(fine)}
+                                                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                                                            >
+                                                                Thu tiền
+                                                            </button>
+                                                        )}
+                                                        {/* Admin: Xóa phiếu phạt (không thu tiền) */}
+                                                        {isAdmin && (
+                                                            <button
+                                                                onClick={() => handleDeleteFine(fine)}
+                                                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                                                            >
+                                                                Xóa
+                                                            </button>
+                                                        )}
+                                                    </>
                                                 )}
                                                 {fine.status === 'paid' && (
                                                     <span className="text-gray-400 text-sm">

@@ -412,12 +412,38 @@ const refundDeposit = asyncHandler(async (req, res) => {
     });
 });
 
+/**
+ * @desc    Xóa phiếu phạt (Admin only)
+ * @route   DELETE /api/fines/:id
+ * @access  Admin
+ */
+const deleteFine = asyncHandler(async (req, res) => {
+    const fine = await Fine.findByPk(req.params.id);
+
+    if (!fine) {
+        throw new AppError('Không tìm thấy phiếu phạt', 404);
+    }
+
+    // Chỉ cho phép xóa phiếu chưa thanh toán
+    if (fine.status === 'paid') {
+        throw new AppError('Không thể xóa phiếu phạt đã thanh toán', 400);
+    }
+
+    await fine.destroy();
+
+    res.json({
+        success: true,
+        message: 'Xóa phiếu phạt thành công'
+    });
+});
+
 module.exports = {
     // Fine
     getFines,
     getMyFines,
     payFine,
     payAllFines,
+    deleteFine,
 
     // Deposit
     getDeposits,

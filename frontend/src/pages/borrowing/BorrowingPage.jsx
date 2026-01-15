@@ -41,6 +41,7 @@ import {
     ReturnBookModal,
     CreateBorrowModal
 } from '../../components';
+import { useAuth } from '../../contexts/AuthContext';
 
 /**
  * Status configuration
@@ -89,6 +90,10 @@ const BorrowingPage = () => {
         onConfirm: null
     });
     const [actionLoading, setActionLoading] = useState(false);
+
+    // Lấy thông tin user để check quyền
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'admin';
 
     /**
      * Fetch borrow requests
@@ -269,10 +274,10 @@ const BorrowingPage = () => {
             fetchData();
         } catch (error) {
             console.error('Extend borrow error:', error);
-            
+
             // Xử lý lỗi chi tiết
             const errorData = error.response?.data;
-            
+
             // Nếu có mảng errors (validation errors)
             if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
                 // Hiển thị từng lỗi validation
@@ -372,13 +377,16 @@ const BorrowingPage = () => {
                     <h1 className="text-2xl font-bold text-gray-900">Quản lý mượn trả</h1>
                     <p className="text-gray-500 text-sm mt-1">Quản lý các phiếu mượn sách</p>
                 </div>
-                <button
-                    onClick={() => setCreateModalOpen(true)}
-                    className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium flex items-center gap-2 shadow-sm"
-                >
-                    <HiOutlinePlus className="w-5 h-5" />
-                    Tạo phiếu mượn
-                </button>
+                {/* Admin không được tạo phiếu mượn - chỉ Librarian */}
+                {!isAdmin && (
+                    <button
+                        onClick={() => setCreateModalOpen(true)}
+                        className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium flex items-center gap-2 shadow-sm"
+                    >
+                        <HiOutlinePlus className="w-5 h-5" />
+                        Tạo phiếu mượn
+                    </button>
+                )}
             </div>
 
             {/* ===== TABS & SEARCH ===== */}
@@ -493,8 +501,8 @@ const BorrowingPage = () => {
                                                         <HiOutlineEye className="w-5 h-5 text-gray-500" />
                                                     </button>
 
-                                                    {/* Approve (for pending) */}
-                                                    {request.status === 'pending' && (
+                                                    {/* Approve/Reject (for pending) - Admin không được duyệt */}
+                                                    {request.status === 'pending' && !isAdmin && (
                                                         <>
                                                             <button
                                                                 onClick={() => handleApprove(request)}
@@ -513,8 +521,8 @@ const BorrowingPage = () => {
                                                         </>
                                                     )}
 
-                                                    {/* Issue books (for approved) */}
-                                                    {request.status === 'approved' && (
+                                                    {/* Issue books (for approved) - Admin không được xuất sách */}
+                                                    {request.status === 'approved' && !isAdmin && (
                                                         <button
                                                             onClick={() => handleIssue(request)}
                                                             className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
@@ -524,8 +532,8 @@ const BorrowingPage = () => {
                                                         </button>
                                                     )}
 
-                                                    {/* Extend & Return (for borrowed/overdue) */}
-                                                    {['borrowed', 'overdue'].includes(request.status) && (
+                                                    {/* Extend & Return (for borrowed/overdue) - Admin không được gia hạn/trả sách */}
+                                                    {['borrowed', 'overdue'].includes(request.status) && !isAdmin && (
                                                         <>
                                                             <button
                                                                 onClick={() => handleExtend(request)}
