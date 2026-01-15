@@ -111,29 +111,29 @@ module.exports = {
         await queryInterface.bulkInsert('system_settings', [
             {
                 setting_key: 'fine_rate_percent',
-                setting_value: '10',
-                description: 'Phần trăm tiền phạt trễ hạn (% giá sách / ngày)',
+                setting_value: '0.1',
+                description: 'Phần trăm tiền phạt trễ hạn (0.1 = 10% giá sách / ngày)',
                 created_at: now,
                 updated_at: now
             },
             {
-                setting_key: 'default_borrow_days',
+                setting_key: 'max_borrow_days',
                 setting_value: '14',
-                description: 'Số ngày mượn mặc định',
+                description: 'Số ngày mượn tối đa',
                 created_at: now,
                 updated_at: now
             },
             {
-                setting_key: 'default_max_books',
+                setting_key: 'max_books_per_user',
                 setting_value: '5',
                 description: 'Số sách tối đa được mượn cùng lúc',
                 created_at: now,
                 updated_at: now
             },
             {
-                setting_key: 'default_deposit_amount',
+                setting_key: 'min_deposit_amount',
                 setting_value: '200000',
-                description: 'Tiền đặt cọc mặc định (VND)',
+                description: 'Tiền đặt cọc tối thiểu (VND)',
                 created_at: now,
                 updated_at: now
             },
@@ -276,8 +276,8 @@ module.exports = {
         // ===================================================================
         // 11. TẠO THẺ THƯ VIỆN
         // ===================================================================
-        const issueDate = new Date('2024-01-01');
-        const expiryDate = new Date('2025-12-31');
+        const issueDate = new Date('2026-01-01');
+        const expiryDate = new Date('2027-12-31');
         const libraryCards = readerIds.map((readerId, index) => ({
             card_number: `TV2024${String(index + 1).padStart(3, '0')}`,
             reader_id: readerId,
@@ -469,15 +469,15 @@ module.exports = {
         // 17. TẠO PHIẾU MƯỢN
         // ===================================================================
         const borrowRequests = [];
-        const requestDate1 = new Date('2024-01-15');
-        const borrowDate1 = new Date('2024-01-16');
-        const dueDate1 = new Date('2024-01-30');
-        const requestDate2 = new Date('2024-01-20');
-        const borrowDate2 = new Date('2024-01-21');
-        const dueDate2 = new Date('2024-02-04');
-        const requestDate3 = new Date('2024-01-25');
-        const borrowDate3 = new Date('2024-01-26');
-        const dueDate3 = new Date('2024-02-09');
+        const requestDate1 = new Date('2026-01-05');
+        const borrowDate1 = new Date('2026-01-06');
+        const dueDate1 = new Date('2026-01-20');
+        const requestDate2 = new Date('2026-01-10');
+        const borrowDate2 = new Date('2026-01-11');
+        const dueDate2 = new Date('2026-01-25');
+        const requestDate3 = new Date('2026-01-08');
+        const borrowDate3 = new Date('2026-01-09');
+        const dueDate3 = new Date('2026-01-23');
 
         // Phiếu đã trả
         borrowRequests.push({
@@ -507,15 +507,15 @@ module.exports = {
             updated_at: now
         });
 
-        // Phiếu quá hạn
-        const overdueDate = new Date('2024-01-10');
+        // Phiếu quá hạn (mượn từ 01/01, hạn trả 10/01 - đã quá hạn)
+        const overdueDate = new Date('2026-01-01');
         borrowRequests.push({
             library_card_id: cardIds[2],
             account_id: readerAccountIds[2],
             approved_by: librarianStaffId,
             request_date: overdueDate,
-            borrow_date: new Date('2024-01-11'),
-            due_date: new Date('2024-01-25'),
+            borrow_date: new Date('2026-01-02'),
+            due_date: new Date('2026-01-10'),
             status: 'overdue',
             notes: 'Quá hạn trả',
             created_at: now,
@@ -527,9 +527,9 @@ module.exports = {
             library_card_id: cardIds[3],
             account_id: readerAccountIds[3],
             approved_by: null,
-            request_date: new Date('2024-01-28'),
+            request_date: new Date('2026-01-14'),
             borrow_date: null,
-            due_date: new Date('2024-02-11'),
+            due_date: new Date('2026-01-28'),
             status: 'pending',
             notes: 'Chờ duyệt',
             created_at: now,
@@ -541,9 +541,9 @@ module.exports = {
             library_card_id: cardIds[4],
             account_id: readerAccountIds[4],
             approved_by: librarianStaffId,
-            request_date: new Date('2024-01-27'),
+            request_date: new Date('2026-01-13'),
             borrow_date: null,
-            due_date: new Date('2024-02-10'),
+            due_date: new Date('2026-01-27'),
             status: 'approved',
             notes: 'Đã duyệt, chờ lấy sách',
             created_at: now,
@@ -588,7 +588,7 @@ module.exports = {
         // 19. TẠO PHIẾU PHẠT
         // ===================================================================
         // Phạt cho phiếu quá hạn (borrowRequestIds[2])
-        const overdueDays = Math.floor((now - new Date('2024-01-25')) / (1000 * 60 * 60 * 24));
+        const overdueDays = Math.floor((now - new Date('2026-01-10')) / (1000 * 60 * 60 * 24));
         const fineAmount1 = Math.round(50000 * 0.1 * overdueDays); // 10% giá sách x số ngày
         const fineAmount2 = Math.round(60000 * 0.1 * overdueDays);
         const fines = [
@@ -625,7 +625,7 @@ module.exports = {
             const totalFine = fines.reduce((sum, f) => sum + f.amount, 0);
             reminders.push({
                 borrow_request_id: borrowRequestIds[2],
-                sent_date: new Date('2024-01-26'), // Thứ 6
+                sent_date: new Date('2026-01-11'), // Ngày sau hạn trả
                 content: `Nhắc trả sách quá hạn:\n- Ngày hẹn trả: 25/01/2024\n- Số ngày quá hạn: ${overdueDays} ngày\n- Tổng tiền phạt dự kiến: ${totalFine.toLocaleString('vi-VN')} VND`,
                 estimated_fine: totalFine,
                 created_at: now,
