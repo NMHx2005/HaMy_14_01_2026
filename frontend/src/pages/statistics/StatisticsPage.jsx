@@ -9,7 +9,6 @@ import {
     getDashboardStats,
     getOverdueBooks,
     getPopularBooks,
-    getBorrowingTrend,
     getSemiAnnualReport
 } from '../../services/statisticsService';
 import toast from 'react-hot-toast';
@@ -30,10 +29,8 @@ const StatisticsPage = () => {
     const [stats, setStats] = useState(null);
     const [overdueBooks, setOverdueBooks] = useState([]);
     const [popularBooks, setPopularBooks] = useState([]);
-    const [trend, setTrend] = useState([]);
     const [report, setReport] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
-    const [trendPeriod, setTrendPeriod] = useState('month');
 
     /**
      * Fetch all statistics
@@ -41,23 +38,20 @@ const StatisticsPage = () => {
     const fetchStats = async () => {
         try {
             setLoading(true);
-            const [dashboardRes, overdueRes, popularRes, trendRes] = await Promise.all([
+            const [dashboardRes, overdueRes, popularRes] = await Promise.all([
                 getDashboardStats(),
                 getOverdueBooks(),
-                getPopularBooks({ limit: 10, period: 'month' }),
-                getBorrowingTrend(trendPeriod)
+                getPopularBooks({ limit: 10, period: 'month' })
             ]);
 
             // Response có thể là { success, data } hoặc data trực tiếp
             const statsData = dashboardRes?.data || dashboardRes || null;
             const overdueData = Array.isArray(overdueRes?.data) ? overdueRes.data : (Array.isArray(overdueRes) ? overdueRes : []);
             const popularData = Array.isArray(popularRes?.data) ? popularRes.data : (Array.isArray(popularRes) ? popularRes : []);
-            const trendData = Array.isArray(trendRes?.data) ? trendRes.data : (Array.isArray(trendRes) ? trendRes : []);
             
             setStats(statsData);
             setOverdueBooks(overdueData);
             setPopularBooks(popularData);
-            setTrend(trendData);
         } catch (error) {
             console.error('Fetch stats error:', error);
             toast.error('Không thể tải dữ liệu thống kê');
@@ -83,7 +77,7 @@ const StatisticsPage = () => {
 
     useEffect(() => {
         fetchStats();
-    }, [trendPeriod]);
+    }, []);
 
     useEffect(() => {
         if (activeTab === 'report' && !report) {
@@ -281,45 +275,6 @@ const StatisticsPage = () => {
                         </div>
                     </div>
 
-                    {/* Borrowing Trend */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-semibold text-gray-900">Xu hướng mượn sách</h3>
-                            <select
-                                value={trendPeriod}
-                                onChange={(e) => setTrendPeriod(e.target.value)}
-                                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
-                            >
-                                <option value="week">7 ngày qua</option>
-                                <option value="month">30 ngày qua</option>
-                                <option value="6months">6 tháng qua</option>
-                            </select>
-                        </div>
-                        <div className="h-48 flex items-end gap-1">
-                            {trend.length > 0 ? (
-                                trend.map((item, index) => {
-                                    const maxCount = Math.max(...trend.map(t => t.count)) || 1;
-                                    const height = (item.count / maxCount) * 100;
-                                    return (
-                                        <div
-                                            key={index}
-                                            className="flex-1 bg-blue-500 rounded-t-lg min-h-[4px] transition-all hover:bg-blue-600"
-                                            style={{ height: `${Math.max(height, 2)}%` }}
-                                            title={`${item.date}: ${item.count} lượt mượn`}
-                                        />
-                                    );
-                                })
-                            ) : (
-                                <p className="w-full text-center text-gray-400 py-16">Không có dữ liệu</p>
-                            )}
-                        </div>
-                        {trend.length > 0 && (
-                            <div className="flex justify-between mt-2 text-xs text-gray-500">
-                                <span>{trend[0]?.date}</span>
-                                <span>{trend[trend.length - 1]?.date}</span>
-                            </div>
-                        )}
-                    </div>
                 </div>
             )}
 

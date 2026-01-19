@@ -4,10 +4,33 @@
  * ===================================================================
  */
 
+import { useState, useEffect } from 'react';
 import Modal from '../Modal';
-import { HiOutlineUser, HiOutlinePhone, HiOutlineMail, HiOutlineCalendar, HiOutlineIdentification, HiOutlineCreditCard } from 'react-icons/hi';
+import { api } from '../../services';
+import { HiOutlineUser, HiOutlinePhone, HiOutlineMail, HiOutlineCalendar, HiOutlineIdentification, HiOutlineCreditCard, HiOutlineBookOpen } from 'react-icons/hi';
 
 const MemberDetailModal = ({ isOpen, onClose, member }) => {
+    const [borrowedBooks, setBorrowedBooks] = useState([]);
+    const [loadingBooks, setLoadingBooks] = useState(false);
+
+    useEffect(() => {
+        if (isOpen && member?.id) {
+            const fetchBorrowedBooks = async () => {
+                try {
+                    setLoadingBooks(true);
+                    const response = await api.get(`/readers/${member.id}/borrowed-books`);
+                    setBorrowedBooks(response?.data || []);
+                } catch (error) {
+                    console.error('Error fetching borrowed books:', error);
+                    setBorrowedBooks([]);
+                } finally {
+                    setLoadingBooks(false);
+                }
+            };
+            fetchBorrowedBooks();
+        }
+    }, [isOpen, member?.id]);
+
     if (!member) return null;
 
     const getAccountStatusBadge = (status) => {
@@ -158,6 +181,38 @@ const MemberDetailModal = ({ isOpen, onClose, member }) => {
                         <span className="text-blue-600">Tên đăng nhập</span>
                         <span className="font-semibold text-blue-900">{member.account?.username || '-'}</span>
                     </div>
+                </div>
+
+                {/* Borrowed Books */}
+                <div className="border border-gray-200 rounded-xl p-5 space-y-4">
+                    <div className="flex items-center gap-2">
+                        <HiOutlineBookOpen className="w-5 h-5 text-gray-600" />
+                        <h4 className="font-semibold text-gray-900">Sách đang mượn ({borrowedBooks.length})</h4>
+                    </div>
+                    {loadingBooks ? (
+                        <div className="text-center py-4">
+                            <div className="w-6 h-6 border-2 border-gray-300 border-t-black rounded-full animate-spin mx-auto"></div>
+                        </div>
+                    ) : borrowedBooks.length > 0 ? (
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                            {borrowedBooks.map((book, index) => (
+                                <div key={index} className="flex justify-between items-center bg-gray-50 rounded-lg p-3">
+                                    <div>
+                                        <p className="font-medium text-gray-900 text-sm">{book.book_title}</p>
+                                        <p className="text-xs text-gray-500">Mã: {book.book_code}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs text-gray-500">Hạn trả: {formatDate(book.due_date)}</p>
+                                        {book.status === 'overdue' && (
+                                            <span className="text-xs text-red-600 font-medium">Quá hạn</span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-gray-500 text-sm text-center py-4">Không có sách đang mượn</p>
+                    )}
                 </div>
             </div>
         </Modal>

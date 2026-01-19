@@ -8,7 +8,7 @@ import api from './api';
 
 /**
  * Lấy danh sách độc giả/thành viên
- * @param {Object} params - { keyword, status, page, limit }
+ * @param {Object} params - { keyword, status, account_status, page, limit }
  */
 export const getReaders = async (params = {}) => {
     const response = await api.get('/readers', { params });
@@ -112,6 +112,33 @@ export const renewLibraryCard = async (id, new_expiry_date) => {
     return response;
 };
 
+/**
+ * Khóa thẻ thư viện
+ * @param {number} id - ID thẻ thư viện
+ */
+export const lockLibraryCard = async (id) => {
+    const response = await api.put(`/library-cards/${id}/lock`);
+    return response;
+};
+
+/**
+ * Mở khóa thẻ thư viện
+ * @param {number} id - ID thẻ thư viện
+ */
+export const unlockLibraryCard = async (id) => {
+    const response = await api.put(`/library-cards/${id}/unlock`);
+    return response;
+};
+
+/**
+ * Lấy danh sách sách đang mượn của độc giả
+ * @param {number} id - ID độc giả
+ */
+export const getReaderBorrowedBooks = async (id) => {
+    const response = await api.get(`/readers/${id}/borrowed-books`);
+    return response;
+};
+
 export default {
     getReaders,
     getReaderById,
@@ -120,7 +147,10 @@ export default {
     lockReader,
     unlockReader,
     deleteReader,
+    getReaderBorrowedBooks,
     createLibraryCard,
     updateLibraryCard,
-    renewLibraryCard
+    renewLibraryCard,
+    lockLibraryCard,
+    unlockLibraryCard
 };

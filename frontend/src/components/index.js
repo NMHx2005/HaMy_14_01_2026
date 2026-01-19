@@ -19,7 +19,9 @@ export {
     BorrowDetailModal,
     CreateBorrowModal,
     ExtendModal,
-    ReturnBookModal
+    ReturnBookModal,
+    ReturnBookCollapse,
+    BorrowCollapseTableRow
 } from './borrowing';
 
 // Books-specific modals

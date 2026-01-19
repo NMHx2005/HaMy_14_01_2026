@@ -11,7 +11,7 @@ export { LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage, VerifyE
 export { DashboardPage } from './dashboard';
 
 // Borrowing
-export { BorrowingPage } from './borrowing';
+export { BorrowingPage, BorrowPage, ReturnPage } from './borrowing';
 
 // Books
 export { BooksPage } from './books';

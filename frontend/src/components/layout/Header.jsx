@@ -10,51 +10,24 @@
  * ===================================================================
  */
 
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { HiOutlineUser, HiOutlineCog } from 'react-icons/hi';
+import { HiOutlineUser, HiOutlineLogout } from 'react-icons/hi';
 
 /**
  * Header Component
  * Thanh tiêu đề với thông tin user và thời gian
  */
-const Header = ({ title }) => {
-    const { user } = useAuth();
-
-    // State cho thời gian hiện tại
-    const [currentTime, setCurrentTime] = useState(new Date());
-
-    // Cập nhật thời gian mỗi giây
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setCurrentTime(new Date());
-        }, 1000);
-
-        return () => clearInterval(timer);
-    }, []);
+const Header = () => {
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
 
     /**
-     * Format thời gian theo định dạng "hh:mm AM/PM"
+     * Xử lý đăng xuất
      */
-    const formatTime = (date) => {
-        return date.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        });
-    };
-
-    /**
-     * Format ngày theo định dạng "Thứ X, DD/MM/YYYY"
-     */
-    const formatDate = (date) => {
-        const days = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-        const day = days[date.getDay()];
-        const dateNum = date.getDate().toString().padStart(2, '0');
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}, ${dateNum}/${month}/${year}`;
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
     };
 
     /**
@@ -102,30 +75,16 @@ const Header = ({ title }) => {
                 </div>
             </Link>
 
-            {/* ===== RIGHT SECTION: Time, Date & Settings ===== */}
+            {/* ===== RIGHT SECTION: Logout Button ===== */}
             <div className="flex items-center gap-4">
-                {/* Time & Date */}
-                <div className="text-right">
-                    {/* Time: 12:29 PM */}
-                    <p className="text-lg font-semibold text-black leading-tight">
-                        {formatTime(currentTime)}
-                    </p>
-                    {/* Date: Jan 02, 2026 */}
-                    <p className="text-sm text-black leading-tight">
-                        {formatDate(currentTime)}
-                    </p>
-                </div>
-
-                {/* Divider Line: x=1635, vertical */}
-                <div className="w-0.5 h-14 bg-black"></div>
-
-                {/* Settings Icon: 38x38 */}
-                <Link
-                    to="/settings"
-                    className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-lg transition-colors"
+                {/* Logout Button */}
+                <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 px-4 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
                 >
-                    <HiOutlineCog className="w-8 h-8 text-black" />
-                </Link>
+                    <HiOutlineLogout className="w-5 h-5" />
+                    <span className="text-sm font-medium">Đăng xuất</span>
+                </button>
             </div>
         </header>
     );

@@ -50,20 +50,6 @@ module.exports = (sequelize) => {
             comment: 'Mã thể loại (FK -> genres)'
         },
 
-        // Số trang
-        page_count: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-            comment: 'Số trang sách'
-        },
-
-        // Khổ sách (VD: 14x20cm, 16x24cm, ...)
-        size: {
-            type: DataTypes.STRING(20),
-            allowNull: true,
-            comment: 'Khổ sách (VD: 14x20cm)'
-        },
-
         // Mô tả/Tóm tắt nội dung
         description: {
             type: DataTypes.TEXT,

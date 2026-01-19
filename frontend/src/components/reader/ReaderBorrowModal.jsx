@@ -16,6 +16,7 @@ const ReaderBorrowModal = ({ isOpen, onClose, onSuccess, book }) => {
     const [editions, setEditions] = useState([]);
     const [selectedCopies, setSelectedCopies] = useState([]);
     const [dueDate, setDueDate] = useState('');
+    const [maxBorrowDays, setMaxBorrowDays] = useState(14); // Default, will be fetched from settings
 
     // Load editions function
     const loadEditions = useCallback(async () => {
@@ -34,14 +35,33 @@ const ReaderBorrowModal = ({ isOpen, onClose, onSuccess, book }) => {
         }
     }, [book?.id]);
 
-    // Load editions and available copies
+    // Fetch settings and load editions when modal opens
     useEffect(() => {
         if (isOpen && book?.id) {
             loadEditions();
-            // Set default due date (14 days from now)
-            const defaultDue = new Date();
-            defaultDue.setDate(defaultDue.getDate() + 14);
-            setDueDate(defaultDue.toISOString().split('T')[0]);
+
+            // Fetch system settings for max_borrow_days
+            const loadSettings = async () => {
+                try {
+                    const response = await api.get('/system/settings');
+                    const settings = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
+                    const maxDays = settings.find(s => s.setting_key === 'max_borrow_days');
+                    const days = maxDays ? parseInt(maxDays.setting_value) : 14;
+                    setMaxBorrowDays(days);
+
+                    // Set default due date based on max_borrow_days
+                    const defaultDue = new Date();
+                    defaultDue.setDate(defaultDue.getDate() + days);
+                    setDueDate(defaultDue.toISOString().split('T')[0]);
+                } catch (error) {
+                    console.error('Load settings error:', error);
+                    // Fallback to 14 days
+                    const defaultDue = new Date();
+                    defaultDue.setDate(defaultDue.getDate() + 14);
+                    setDueDate(defaultDue.toISOString().split('T')[0]);
+                }
+            };
+            loadSettings();
         }
     }, [isOpen, book?.id, loadEditions]);
 
@@ -59,7 +79,7 @@ const ReaderBorrowModal = ({ isOpen, onClose, onSuccess, book }) => {
             }
 
             const copy = copies[0];
-            
+
             // Check if already selected
             if (selectedCopies.find(c => c.copyId === copy.id)) {
                 toast.error('Bản sách này đã được chọn');
@@ -109,10 +129,10 @@ const ReaderBorrowModal = ({ isOpen, onClose, onSuccess, book }) => {
             handleClose();
         } catch (error) {
             console.error('Create borrow error:', error);
-            
+
             // Xử lý lỗi chi tiết
             const errorData = error.response?.data;
-            
+
             // Nếu có mảng errors (validation errors)
             if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
                 // Hiển thị từng lỗi validation
@@ -145,6 +165,12 @@ const ReaderBorrowModal = ({ isOpen, onClose, onSuccess, book }) => {
         const today = new Date();
         today.setDate(today.getDate() + 1);
         return today.toISOString().split('T')[0];
+    };
+
+    const getMaxDate = () => {
+        const maxDate = new Date();
+        maxDate.setDate(maxDate.getDate() + maxBorrowDays);
+        return maxDate.toISOString().split('T')[0];
     };
 
     if (!book) return null;
@@ -227,9 +253,10 @@ const ReaderBorrowModal = ({ isOpen, onClose, onSuccess, book }) => {
                         value={dueDate}
                         onChange={(e) => setDueDate(e.target.value)}
                         min={getMinDate()}
+                        max={getMaxDate()}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Mặc định: 14 ngày kể từ hôm nay</p>
+                    <p className="text-xs text-gray-500 mt-1">Tối đa: {maxBorrowDays} ngày kể từ hôm nay</p>
                 </div>
 
                 {/* Submit */}

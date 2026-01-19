@@ -74,18 +74,7 @@ const registerValidator = [
     body('phone')
         .optional()
         .matches(/^[0-9]{10,11}$/)
-        .withMessage('Số điện thoại không hợp lệ'),
-
-    body('birth_date')
-        .optional()
-        .isDate()
-        .withMessage('Ngày sinh không hợp lệ'),
-
-    body('address')
-        .optional()
-        .trim()
-        .isLength({ max: 500 })
-        .withMessage('Địa chỉ không quá 500 ký tự')
+        .withMessage('Số điện thoại không hợp lệ')
 ];
 
 /**

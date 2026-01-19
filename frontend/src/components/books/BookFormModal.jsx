@@ -21,8 +21,6 @@ const BookFormModal = ({ isOpen, onClose, onSuccess, book = null }) => {
         title: '',
         field_id: '',
         genre_id: '',
-        page_count: '',
-        size: '',
         description: '',
         author_ids: [],
         // Initial edition data (for new books)
@@ -55,15 +53,13 @@ const BookFormModal = ({ isOpen, onClose, onSuccess, book = null }) => {
                 title: book.title || '',
                 field_id: book.field_id || '',
                 genre_id: book.genre_id || '',
-                page_count: book.page_count || '',
-                size: book.size || '',
                 description: book.description || '',
                 author_ids: book.authors?.map(a => a.id) || []
             });
         } else if (!isOpen) {
             setFormData({
                 code: '', title: '', field_id: '', genre_id: '',
-                page_count: '', size: '', description: '', author_ids: []
+                description: '', author_ids: []
             });
         }
     }, [book, isOpen]);
@@ -140,7 +136,6 @@ const BookFormModal = ({ isOpen, onClose, onSuccess, book = null }) => {
 
             const payload = {
                 ...formData,
-                page_count: formData.page_count ? parseInt(formData.page_count) : null,
                 field_id: formData.field_id || null,
                 genre_id: formData.genre_id || null
             };
@@ -242,31 +237,6 @@ const BookFormModal = ({ isOpen, onClose, onSuccess, book = null }) => {
                     </div>
 
                     {/* Page count & Size */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Số trang</label>
-                            <input
-                                type="number"
-                                name="page_count"
-                                value={formData.page_count}
-                                onChange={handleChange}
-                                placeholder="VD: 350"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Kích thước</label>
-                            <input
-                                type="text"
-                                name="size"
-                                value={formData.size}
-                                onChange={handleChange}
-                                placeholder="VD: 14x21cm"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
-                            />
-                        </div>
-                    </div>
-
                     {/* Authors */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Tác giả</label>

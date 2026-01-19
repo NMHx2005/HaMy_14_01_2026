@@ -115,7 +115,7 @@ const login = asyncHandler(async (req, res) => {
 const register = asyncHandler(async (req, res) => {
     const {
         username, password, email,
-        full_name, id_card_number, phone, birth_date, address, title
+        full_name, id_card_number, phone, title
     } = req.body;
 
     // Bắt đầu transaction
@@ -175,8 +175,6 @@ const register = asyncHandler(async (req, res) => {
             id_card_number,
             full_name,
             phone,
-            birth_date,
-            address,
             title
         }, { transaction });
 
@@ -300,7 +298,6 @@ const updateProfile = asyncHandler(async (req, res) => {
         full_name,
         phone,
         address,
-        birth_date, // For reader
         title // For reader
     } = req.body;
 
@@ -333,7 +330,6 @@ const updateProfile = asyncHandler(async (req, res) => {
                 full_name: full_name || account.reader.full_name,
                 phone: phone || account.reader.phone,
                 address: address || account.reader.address,
-                birth_date: birth_date || account.reader.birth_date,
                 title: title || account.reader.title
             }, { transaction });
         }

@@ -483,43 +483,6 @@ const DashboardPage = () => {
             <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-12">
                 {/* ===== LEFT COLUMN - Stats & Actions ===== */}
                 <div className="lg:col-span-2 space-y-8 lg:space-y-12 min-w-0">
-                    {/* Stat Cards Grid */}
-                    <div className="mb-8 lg:mb-12">
-                        <h1 className="text-xl font-semibold text-gray-900 mb-6 lg:mb-8">Thống kê tổng quan</h1>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-7">
-                            <StatCard
-                                title="Tổng đầu sách"
-                                value={stats?.books?.totalBooks || 0}
-                                icon={HiOutlineBookOpen}
-                                color="black"
-                                link="/books"
-                            />
-                            <StatCard
-                                title="Số bản sách"
-                                value={stats?.books?.totalCopies || 0}
-                                icon={HiOutlineBookOpen}
-                                color="blue"
-                                subtitle={`Có sẵn: ${stats?.books?.copiesByStatus?.available || 0} | Đang mượn: ${stats?.books?.copiesByStatus?.borrowed || 0}`}
-                            />
-                            <StatCard
-                                title="Độc giả"
-                                value={stats?.readers?.totalReaders || 0}
-                                icon={HiOutlineUserGroup}
-                                color="green"
-                                link="/members"
-                                subtitle={`Thẻ hoạt động: ${stats?.readers?.activeCards || 0}`}
-                            />
-                            <StatCard
-                                title="Đang mượn"
-                                value={stats?.borrows?.activeBorrows || 0}
-                                icon={HiOutlineClipboardList}
-                                color="yellow"
-                                link="/borrowing"
-                                subtitle={`Hôm nay: ${stats?.borrows?.borrowsToday || 0} phiếu`}
-                            />
-                        </div>
-                    </div>
-
                     {/* Additional Stats Row */}
                     <div className="mb-8 lg:mb-12">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-7">
@@ -613,36 +576,6 @@ const DashboardPage = () => {
                         </div>
                     </div>
 
-                    {/* Quick Actions */}
-                    <div className="mb-8 lg:mb-12">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-6 lg:mb-8">Thao tác nhanh</h2>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-7">
-                            <QuickActionCard
-                                title="Mượn sách"
-                                description="Tạo phiếu mượn mới"
-                                icon={HiOutlineClipboardList}
-                                link="/borrowing/create"
-                            />
-                            <QuickActionCard
-                                title="Trả sách"
-                                description="Xử lý trả sách"
-                                icon={HiOutlineBookOpen}
-                                link="/borrowing?action=return"
-                            />
-                            <QuickActionCard
-                                title="Thêm sách"
-                                description="Thêm đầu sách mới"
-                                icon={HiOutlineBookOpen}
-                                link="/books/create"
-                            />
-                            <QuickActionCard
-                                title="Tìm kiếm"
-                                description="Tìm sách, độc giả"
-                                icon={HiOutlineSearch}
-                                link="/search"
-                            />
-                        </div>
-                    </div>
                 </div>
 
                 {/* ===== RIGHT COLUMN - Overdue Borrowers Panel ===== */}

@@ -29,9 +29,7 @@ const RegisterPage = () => {
         email: '',
         full_name: '',
         id_card_number: '',
-        phone: '',
-        birth_date: '',
-        address: ''
+        phone: ''
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -104,8 +102,6 @@ const RegisterPage = () => {
                 full_name: formData.full_name,
                 id_card_number: formData.id_card_number,
                 phone: formData.phone || null,
-                birth_date: formData.birth_date || null,
-                address: formData.address || null,
                 title: null
             };
 
@@ -151,151 +147,161 @@ const RegisterPage = () => {
                         )}
 
                         {/* Username Field */}
-                        <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3">
-                            <input
-                                type="text"
-                                name="username"
-                                value={formData.username}
-                                onChange={handleChange}
-                                placeholder="Tên đăng nhập"
-                                className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
-                                autoComplete="username"
-                                disabled={loading}
-                                required
-                            />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Tên đăng nhập
+                            </label>
+                            <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3">
+                                <input
+                                    type="text"
+                                    name="username"
+                                    value={formData.username}
+                                    onChange={handleChange}
+                                    placeholder="Tên đăng nhập"
+                                    className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
+                                    autoComplete="username"
+                                    disabled={loading}
+                                    required
+                                />
+                            </div>
                         </div>
 
                         {/* Email Field */}
-                        <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3">
-                            <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                placeholder="Email"
-                                className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
-                                autoComplete="email"
-                                disabled={loading}
-                                required
-                            />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Email
+                            </label>
+                            <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3">
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    placeholder="Email"
+                                    className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
+                                    autoComplete="email"
+                                    disabled={loading}
+                                    required
+                                />
+                            </div>
                         </div>
 
                         {/* Full Name Field */}
-                        <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3">
-                            <input
-                                type="text"
-                                name="full_name"
-                                value={formData.full_name}
-                                onChange={handleChange}
-                                placeholder="Họ và tên"
-                                className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
-                                disabled={loading}
-                                required
-                            />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Họ và tên
+                            </label>
+                            <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3">
+                                <input
+                                    type="text"
+                                    name="full_name"
+                                    value={formData.full_name}
+                                    onChange={handleChange}
+                                    placeholder="Họ và tên"
+                                    className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
+                                    disabled={loading}
+                                    required
+                                />
+                            </div>
                         </div>
 
                         {/* ID Card Number Field */}
-                        <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3">
-                            <input
-                                type="text"
-                                name="id_card_number"
-                                value={formData.id_card_number}
-                                onChange={handleChange}
-                                placeholder="Số CMND/CCCD"
-                                className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
-                                disabled={loading}
-                                required
-                            />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Số CMND/CCCD
+                            </label>
+                            <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3">
+                                <input
+                                    type="text"
+                                    name="id_card_number"
+                                    value={formData.id_card_number}
+                                    onChange={handleChange}
+                                    placeholder="Số CMND/CCCD"
+                                    className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
+                                    disabled={loading}
+                                    required
+                                />
+                            </div>
                         </div>
 
                         {/* Phone Field */}
-                        <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3">
-                            <input
-                                type="tel"
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleChange}
-                                placeholder="Số điện thoại"
-                                className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
-                                disabled={loading}
-                            />
-                        </div>
-
-                        {/* Birth Date Field */}
-                        <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3">
-                            <input
-                                type="date"
-                                name="birth_date"
-                                value={formData.birth_date}
-                                onChange={handleChange}
-                                className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
-                                disabled={loading}
-                            />
-                        </div>
-
-                        {/* Address Field */}
-                        <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3">
-                            <input
-                                type="text"
-                                name="address"
-                                value={formData.address}
-                                onChange={handleChange}
-                                placeholder="Địa chỉ"
-                                className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
-                                disabled={loading}
-                            />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Số điện thoại
+                            </label>
+                            <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3">
+                                <input
+                                    type="tel"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleChange}
+                                    placeholder="Số điện thoại"
+                                    className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
+                                    disabled={loading}
+                                />
+                            </div>
                         </div>
 
                         {/* Password Field */}
-                        <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3 flex items-center">
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                placeholder="Mật khẩu"
-                                className="flex-1 bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
-                                autoComplete="new-password"
-                                disabled={loading}
-                                required
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="ml-2 text-gray-400 hover:text-gray-600"
-                            >
-                                {showPassword ? (
-                                    <HiOutlineEyeOff className="w-5 h-5" />
-                                ) : (
-                                    <HiOutlineEye className="w-5 h-5" />
-                                )}
-                            </button>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Mật khẩu
+                            </label>
+                            <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3 flex items-center">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    name="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    placeholder="Mật khẩu"
+                                    className="flex-1 bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
+                                    autoComplete="new-password"
+                                    disabled={loading}
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="ml-2 text-gray-400 hover:text-gray-600"
+                                >
+                                    {showPassword ? (
+                                        <HiOutlineEyeOff className="w-5 h-5" />
+                                    ) : (
+                                        <HiOutlineEye className="w-5 h-5" />
+                                    )}
+                                </button>
+                            </div>
                         </div>
 
                         {/* Confirm Password Field */}
-                        <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3 flex items-center">
-                            <input
-                                type={showConfirmPassword ? 'text' : 'password'}
-                                name="confirmPassword"
-                                value={formData.confirmPassword}
-                                onChange={handleChange}
-                                placeholder="Xác nhận mật khẩu"
-                                className="flex-1 bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
-                                autoComplete="new-password"
-                                disabled={loading}
-                                required
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                className="ml-2 text-gray-400 hover:text-gray-600"
-                            >
-                                {showConfirmPassword ? (
-                                    <HiOutlineEyeOff className="w-5 h-5" />
-                                ) : (
-                                    <HiOutlineEye className="w-5 h-5" />
-                                )}
-                            </button>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Xác nhận mật khẩu
+                            </label>
+                            <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3 flex items-center">
+                                <input
+                                    type={showConfirmPassword ? 'text' : 'password'}
+                                    name="confirmPassword"
+                                    value={formData.confirmPassword}
+                                    onChange={handleChange}
+                                    placeholder="Xác nhận mật khẩu"
+                                    className="flex-1 bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
+                                    autoComplete="new-password"
+                                    disabled={loading}
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="ml-2 text-gray-400 hover:text-gray-600"
+                                >
+                                    {showConfirmPassword ? (
+                                        <HiOutlineEyeOff className="w-5 h-5" />
+                                    ) : (
+                                        <HiOutlineEye className="w-5 h-5" />
+                                    )}
+                                </button>
+                            </div>
                         </div>
 
                         {/* Submit Button */}
@@ -366,107 +372,142 @@ const RegisterPage = () => {
                         )}
 
                         {/* Username */}
-                        <div className="bg-white border border-[#3D3D3D] rounded-xl px-4 py-3">
-                            <input
-                                type="text"
-                                name="username"
-                                value={formData.username}
-                                onChange={handleChange}
-                                placeholder="Tên đăng nhập"
-                                className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none"
-                                required
-                            />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Tên đăng nhập
+                            </label>
+                            <div className="bg-white border border-[#3D3D3D] rounded-xl px-4 py-3">
+                                <input
+                                    type="text"
+                                    name="username"
+                                    value={formData.username}
+                                    onChange={handleChange}
+                                    placeholder="Tên đăng nhập"
+                                    className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none"
+                                    required
+                                />
+                            </div>
                         </div>
 
                         {/* Email */}
-                        <div className="bg-white border border-[#3D3D3D] rounded-xl px-4 py-3">
-                            <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                placeholder="Email"
-                                className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none"
-                                required
-                            />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Email
+                            </label>
+                            <div className="bg-white border border-[#3D3D3D] rounded-xl px-4 py-3">
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    placeholder="Email"
+                                    className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none"
+                                    required
+                                />
+                            </div>
                         </div>
 
                         {/* Full Name */}
-                        <div className="bg-white border border-[#3D3D3D] rounded-xl px-4 py-3">
-                            <input
-                                type="text"
-                                name="full_name"
-                                value={formData.full_name}
-                                onChange={handleChange}
-                                placeholder="Họ và tên"
-                                className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none"
-                                required
-                            />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Họ và tên
+                            </label>
+                            <div className="bg-white border border-[#3D3D3D] rounded-xl px-4 py-3">
+                                <input
+                                    type="text"
+                                    name="full_name"
+                                    value={formData.full_name}
+                                    onChange={handleChange}
+                                    placeholder="Họ và tên"
+                                    className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none"
+                                    required
+                                />
+                            </div>
                         </div>
 
                         {/* ID Card */}
-                        <div className="bg-white border border-[#3D3D3D] rounded-xl px-4 py-3">
-                            <input
-                                type="text"
-                                name="id_card_number"
-                                value={formData.id_card_number}
-                                onChange={handleChange}
-                                placeholder="Số CMND/CCCD"
-                                className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none"
-                                required
-                            />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Số CMND/CCCD
+                            </label>
+                            <div className="bg-white border border-[#3D3D3D] rounded-xl px-4 py-3">
+                                <input
+                                    type="text"
+                                    name="id_card_number"
+                                    value={formData.id_card_number}
+                                    onChange={handleChange}
+                                    placeholder="Số CMND/CCCD"
+                                    className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none"
+                                    required
+                                />
+                            </div>
                         </div>
 
                         {/* Phone */}
-                        <div className="bg-white border border-[#3D3D3D] rounded-xl px-4 py-3">
-                            <input
-                                type="tel"
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleChange}
-                                placeholder="Số điện thoại"
-                                className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none"
-                            />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Số điện thoại
+                            </label>
+                            <div className="bg-white border border-[#3D3D3D] rounded-xl px-4 py-3">
+                                <input
+                                    type="tel"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleChange}
+                                    placeholder="Số điện thoại"
+                                    className="w-full bg-transparent text-gray-700 placeholder:text-[#727272] outline-none"
+                                />
+                            </div>
                         </div>
 
                         {/* Password */}
-                        <div className="bg-white border border-[#3D3D3D] rounded-xl px-4 py-3 flex items-center">
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                placeholder="Mật khẩu"
-                                className="flex-1 bg-transparent text-gray-700 placeholder:text-[#727272] outline-none"
-                                required
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="ml-2 text-gray-400"
-                            >
-                                {showPassword ? <HiOutlineEyeOff className="w-5 h-5" /> : <HiOutlineEye className="w-5 h-5" />}
-                            </button>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Mật khẩu
+                            </label>
+                            <div className="bg-white border border-[#3D3D3D] rounded-xl px-4 py-3 flex items-center">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    name="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    placeholder="Mật khẩu"
+                                    className="flex-1 bg-transparent text-gray-700 placeholder:text-[#727272] outline-none"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="ml-2 text-gray-400"
+                                >
+                                    {showPassword ? <HiOutlineEyeOff className="w-5 h-5" /> : <HiOutlineEye className="w-5 h-5" />}
+                                </button>
+                            </div>
                         </div>
 
                         {/* Confirm Password */}
-                        <div className="bg-white border border-[#3D3D3D] rounded-xl px-4 py-3 flex items-center">
-                            <input
-                                type={showConfirmPassword ? 'text' : 'password'}
-                                name="confirmPassword"
-                                value={formData.confirmPassword}
-                                onChange={handleChange}
-                                placeholder="Xác nhận mật khẩu"
-                                className="flex-1 bg-transparent text-gray-700 placeholder:text-[#727272] outline-none"
-                                required
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                className="ml-2 text-gray-400"
-                            >
-                                {showConfirmPassword ? <HiOutlineEyeOff className="w-5 h-5" /> : <HiOutlineEye className="w-5 h-5" />}
-                            </button>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Xác nhận mật khẩu
+                            </label>
+                            <div className="bg-white border border-[#3D3D3D] rounded-xl px-4 py-3 flex items-center">
+                                <input
+                                    type={showConfirmPassword ? 'text' : 'password'}
+                                    name="confirmPassword"
+                                    value={formData.confirmPassword}
+                                    onChange={handleChange}
+                                    placeholder="Xác nhận mật khẩu"
+                                    className="flex-1 bg-transparent text-gray-700 placeholder:text-[#727272] outline-none"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="ml-2 text-gray-400"
+                                >
+                                    {showConfirmPassword ? <HiOutlineEyeOff className="w-5 h-5" /> : <HiOutlineEye className="w-5 h-5" />}
+                                </button>
+                            </div>
                         </div>
 
                         {/* Submit Button */}

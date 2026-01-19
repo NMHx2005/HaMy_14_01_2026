@@ -167,6 +167,16 @@ export const createCopies = async (editionId, data) => {
 };
 
 /**
+ * Cập nhật bản sách (trạng thái, giá, ghi chú)
+ * @param {number} copyId - ID bản sách
+ * @param {Object} data - { status, price, condition_notes }
+ */
+export const updateCopy = async (copyId, data) => {
+    const response = await api.put(`/copies/${copyId}`, data);
+    return response.data;
+};
+
+/**
  * Xóa bản sách
  * @param {number} copyId - ID bản sách
  */
@@ -199,6 +209,7 @@ const bookService = {
     getPublishers,
     createPublisher,
     createCopies,
+    updateCopy,
     deleteCopy,
     getCopies
 };

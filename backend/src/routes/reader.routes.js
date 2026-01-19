@@ -65,9 +65,16 @@ router.put('/:id/unlock', authenticate, staffOnly, idParamValidator, validate, r
 
 /**
  * @route   DELETE /api/readers/:id
- * @desc    Xóa độc giả vĩnh viễn
- * @access  Admin only
+ * @desc    Xóa độc giả vĩnh viễn - DISABLED
+ * @access  KHÔNG CHO PHÉP
  */
 router.delete('/:id', authenticate, adminOnly, idParamValidator, validate, readerController.deleteReader);
+
+/**
+ * @route   GET /api/readers/:id/borrowed-books
+ * @desc    Lấy danh sách sách đang mượn của độc giả
+ * @access  Admin, Librarian, Reader (self)
+ */
+router.get('/:id/borrowed-books', authenticate, authenticated, idParamValidator, validate, readerController.getReaderBorrowedBooks);
 
 module.exports = router;

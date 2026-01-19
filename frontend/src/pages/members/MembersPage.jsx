@@ -11,14 +11,12 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { getReaders, getReaderById, deleteReader, lockReader, unlockReader } from '../../services/memberService';
+import { getReaders, getReaderById, lockReader, unlockReader } from '../../services/memberService';
 import toast from 'react-hot-toast';
 import {
     HiOutlineSearch,
     HiOutlinePlus,
-    HiOutlineEye,
     HiOutlinePencil,
-    HiOutlineTrash,
     HiOutlineRefresh,
     HiOutlineUser,
     HiOutlineFilter,
@@ -48,6 +46,7 @@ const MembersPage = () => {
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
+    const [accountStatusFilter, setAccountStatusFilter] = useState('');
     const [showFilters, setShowFilters] = useState(false);
 
     // Modal states
@@ -83,6 +82,9 @@ const MembersPage = () => {
             if (statusFilter) {
                 params.status = statusFilter;
             }
+            if (accountStatusFilter) {
+                params.account_status = accountStatusFilter;
+            }
 
             const response = await getReaders(params);
             // Response có thể là { success, data, pagination } hoặc data trực tiếp
@@ -102,7 +104,7 @@ const MembersPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [pagination.page, pagination.limit, searchQuery, statusFilter]);
+    }, [pagination.page, pagination.limit, searchQuery, statusFilter, accountStatusFilter]);
 
     useEffect(() => {
         fetchMembers();
@@ -111,7 +113,7 @@ const MembersPage = () => {
     // Reset page when filters change
     useEffect(() => {
         setPagination(prev => ({ ...prev, page: 1 }));
-    }, [searchQuery, statusFilter]);
+    }, [searchQuery, statusFilter, accountStatusFilter]);
 
     /**
      * Handle search with debounce
@@ -160,30 +162,6 @@ const MembersPage = () => {
         }
     };
 
-    /**
-     * Delete member
-     */
-    const handleDelete = (member) => {
-        setConfirmModal({
-            open: true,
-            title: 'Xóa thành viên',
-            message: `Xác nhận xóa thành viên "${member.full_name}"? Hành động này không thể hoàn tác.`,
-            type: 'danger',
-            onConfirm: async () => {
-                try {
-                    setActionLoading(true);
-                    await deleteReader(member.id);
-                    toast.success('Xóa thành viên thành công');
-                    setConfirmModal({ ...confirmModal, open: false });
-                    fetchMembers();
-                } catch (error) {
-                    toast.error(error.message || 'Lỗi xóa thành viên');
-                } finally {
-                    setActionLoading(false);
-                }
-            }
-        });
-    };
 
     /**
      * Lock/unlock member
@@ -272,6 +250,7 @@ const MembersPage = () => {
         setDebouncedSearch('');
         setSearchQuery('');
         setStatusFilter('');
+        setAccountStatusFilter('');
     };
 
     // Loading state
@@ -322,15 +301,17 @@ const MembersPage = () => {
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => setShowFilters(!showFilters)}
-                            className={`px-5 py-3 rounded-xl font-medium text-sm flex items-center gap-2 transition-all ${showFilters || statusFilter
+                            className={`px-5 py-3 rounded-xl font-medium text-sm flex items-center gap-2 transition-all ${showFilters || statusFilter || accountStatusFilter
                                     ? 'bg-black text-white'
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                 }`}
                         >
                             <HiOutlineFilter className="w-5 h-5" />
                             Bộ lọc
-                            {statusFilter && (
-                                <span className="bg-white text-black text-xs px-2 py-0.5 rounded-full">1</span>
+                            {(statusFilter || accountStatusFilter) && (
+                                <span className="bg-white text-black text-xs px-2 py-0.5 rounded-full">
+                                    {(statusFilter ? 1 : 0) + (accountStatusFilter ? 1 : 0)}
+                                </span>
                             )}
                         </button>
                         <button
@@ -360,7 +341,20 @@ const MembersPage = () => {
                                 <option value="locked">Đã khóa</option>
                             </select>
                         </div>
-                        {statusFilter && (
+                        <div className="min-w-[200px]">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Trạng thái tài khoản</label>
+                            <select
+                                value={accountStatusFilter}
+                                onChange={(e) => setAccountStatusFilter(e.target.value)}
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-transparent text-sm"
+                            >
+                                <option value="">Tất cả</option>
+                                <option value="active">Hoạt động</option>
+                                <option value="locked">Bị khóa</option>
+                                <option value="inactive">Chưa kích hoạt</option>
+                            </select>
+                        </div>
+                        {(statusFilter || accountStatusFilter) && (
                             <button
                                 onClick={clearFilters}
                                 className="px-4 py-2.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
@@ -392,7 +386,11 @@ const MembersPage = () => {
                                     const accountStatus = getAccountStatusBadge(member.account?.status);
                                     const cardStatus = getCardStatusBadge(member.libraryCard);
                                     return (
-                                        <tr key={member.id} className="hover:bg-gray-50 transition-colors">
+                                        <tr 
+                                            key={member.id} 
+                                            onClick={() => handleViewDetail(member)}
+                                            className="hover:bg-gray-50 transition-colors cursor-pointer"
+                                        >
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
@@ -427,7 +425,10 @@ const MembersPage = () => {
                                                     </div>
                                                 ) : (
                                                     <button
-                                                        onClick={() => handleIssueCard(member)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleIssueCard(member);
+                                                        }}
                                                         className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium hover:bg-blue-100 transition-colors"
                                                     >
                                                         + Cấp thẻ
@@ -435,14 +436,7 @@ const MembersPage = () => {
                                                 )}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="flex items-center justify-center gap-1">
-                                                    <button
-                                                        onClick={() => handleViewDetail(member)}
-                                                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                                        title="Xem chi tiết"
-                                                    >
-                                                        <HiOutlineEye className="w-5 h-5 text-gray-500" />
-                                                    </button>
+                                                <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
                                                     <button
                                                         onClick={() => handleEdit(member)}
                                                         className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
@@ -475,13 +469,6 @@ const MembersPage = () => {
                                                         ) : (
                                                             <HiOutlineLockClosed className="w-5 h-5 text-yellow-600" />
                                                         )}
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(member)}
-                                                        className="p-2 hover:bg-red-100 rounded-lg transition-colors"
-                                                        title="Xóa"
-                                                    >
-                                                        <HiOutlineTrash className="w-5 h-5 text-red-600" />
                                                     </button>
                                                 </div>
                                             </td>

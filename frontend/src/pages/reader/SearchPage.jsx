@@ -352,8 +352,9 @@ const SearchPage = () => {
                 }}
                 book={selectedBook}
                 onBorrow={(book) => {
+                    setDetailModalOpen(false); // Đóng modal chi tiết trước
                     setSelectedBook(book);
-                    setBorrowModalOpen(true);
+                    setBorrowModalOpen(true); // Mở modal mượn sách
                 }}
                 onUpdate={() => {
                     fetchBooks();

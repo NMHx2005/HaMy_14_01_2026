@@ -16,8 +16,9 @@ const BookDetailModal = ({ isOpen, onClose, book, onBorrow, onUpdate }) => {
     const { user } = useAuth();
     const [editions, setEditions] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [manageQuantity, setManageQuantity] = useState(null); // { editionId, quantity }
+    const [manageQuantity, setManageQuantity] = useState(null); // { editionId, quantity, price }
     const [showEditionModal, setShowEditionModal] = useState(false);
+    const [editingCopy, setEditingCopy] = useState(null); // { copyId, status, notes }
 
     const loadEditions = useCallback(async () => {
         if (!book?.id) return;
@@ -39,15 +40,20 @@ const BookDetailModal = ({ isOpen, onClose, book, onBorrow, onUpdate }) => {
 
     if (!book) return null;
 
-    const handleAddCopies = async (editionId, quantity) => {
+    const handleAddCopies = async (editionId, quantity, price) => {
         if (!quantity || quantity <= 0) {
             toast.error('Số lượng phải lớn hơn 0');
             return;
         }
 
+        if (!price || price <= 0) {
+            toast.error('Giá sách phải lớn hơn 0');
+            return;
+        }
+
         try {
             setLoading(true);
-            await bookService.createCopies(editionId, { quantity });
+            await bookService.createCopies(editionId, { quantity, price });
             toast.success(`Đã thêm ${quantity} bản sách`);
             setManageQuantity(null);
             await loadEditions();
@@ -79,31 +85,61 @@ const BookDetailModal = ({ isOpen, onClose, book, onBorrow, onUpdate }) => {
         }
     };
 
+    const handleUpdateCopyStatus = async (copyId, status, notes = '') => {
+        try {
+            setLoading(true);
+            await bookService.updateCopy(copyId, { status, condition_notes: notes });
+            toast.success('Cập nhật trạng thái thành công');
+            setEditingCopy(null);
+            await loadEditions();
+            if (onUpdate) onUpdate();
+        } catch (error) {
+            console.error('Update copy error:', error);
+            toast.error(error.response?.data?.message || 'Không thể cập nhật trạng thái');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    // Tính số lượng từ editions nếu không có từ API
+
+    // Tính số lượng từ editions state
     const getCopiesCount = () => {
-        // Nếu có từ API thì dùng
-        if (book.available_copies !== undefined && book.total_copies !== undefined) {
-            return {
-                available: book.available_copies || 0,
-                total: book.total_copies || 0,
-                borrowed: 0,
-                damaged: 0,
-                disposed: 0
-            };
+        // Ưu tiên tính từ editions state (đã load chi tiết copies)
+        if (editions.length > 0) {
+            let available = 0, borrowed = 0, damaged = 0, disposed = 0;
+            editions.forEach(edition => {
+                (edition.copies || []).forEach(copy => {
+                    if (copy.status === 'available') available++;
+                    else if (copy.status === 'borrowed') borrowed++;
+                    else if (copy.status === 'damaged') damaged++;
+                    else if (copy.status === 'disposed') disposed++;
+                });
+            });
+            return { available, borrowed, damaged, disposed, total: available + borrowed + damaged + disposed };
         }
 
-        // Fallback: tính từ editions
-        let available = 0, borrowed = 0, damaged = 0, disposed = 0;
-        book.editions?.forEach(edition => {
-            edition.copies?.forEach(copy => {
-                if (copy.status === 'available') available++;
-                else if (copy.status === 'borrowed') borrowed++;
-                else if (copy.status === 'damaged') damaged++;
-                else if (copy.status === 'disposed') disposed++;
+        // Fallback: tính từ book.editions nếu có
+        if (book.editions?.length > 0) {
+            let available = 0, borrowed = 0, damaged = 0, disposed = 0;
+            book.editions.forEach(edition => {
+                (edition.copies || []).forEach(copy => {
+                    if (copy.status === 'available') available++;
+                    else if (copy.status === 'borrowed') borrowed++;
+                    else if (copy.status === 'damaged') damaged++;
+                    else if (copy.status === 'disposed') disposed++;
+                });
             });
-        });
-        return { available, borrowed, damaged, disposed, total: available + borrowed + damaged + disposed };
+            return { available, borrowed, damaged, disposed, total: available + borrowed + damaged + disposed };
+        }
+
+        // Fallback cuối: dùng giá trị từ API nếu không có chi tiết
+        return {
+            available: book.available_copies || 0,
+            total: book.total_copies || 0,
+            borrowed: 0,
+            damaged: 0,
+            disposed: 0
+        };
     };
 
     const copiesCount = getCopiesCount();
@@ -131,14 +167,6 @@ const BookDetailModal = ({ isOpen, onClose, book, onBorrow, onUpdate }) => {
                     <div className="bg-gray-50 rounded-xl p-4">
                         <p className="text-xs text-gray-500 mb-1">Thể loại</p>
                         <p className="font-semibold text-gray-900">{book.genre?.name || '-'}</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-4">
-                        <p className="text-xs text-gray-500 mb-1">Số trang</p>
-                        <p className="font-semibold text-gray-900">{book.page_count || '-'}</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-4">
-                        <p className="text-xs text-gray-500 mb-1">Kích thước</p>
-                        <p className="font-semibold text-gray-900">{book.size || '-'}</p>
                     </div>
                 </div>
 
@@ -233,27 +261,90 @@ const BookDetailModal = ({ isOpen, onClose, book, onBorrow, onUpdate }) => {
                                                 <p className="text-xs font-medium text-gray-500 mb-2">Chi tiết bản sách:</p>
                                                 <div className="space-y-1 max-h-[150px] overflow-y-auto">
                                                     {copies.map((copy) => (
-                                                        <div key={copy.id} className="flex items-center justify-between p-2 bg-white rounded-lg text-xs">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="font-mono text-gray-600">#{copy.copy_number}</span>
-                                                                <span className={`px-2 py-0.5 rounded-full ${copy.status === 'available' ? 'bg-green-100 text-green-700' :
-                                                                    copy.status === 'borrowed' ? 'bg-yellow-100 text-yellow-700' :
-                                                                        copy.status === 'damaged' ? 'bg-red-100 text-red-700' :
-                                                                            'bg-gray-100 text-gray-700'
-                                                                    }`}>
-                                                                    {copy.status === 'available' ? 'Có sẵn' :
-                                                                        copy.status === 'borrowed' ? 'Đang mượn' :
-                                                                            copy.status === 'damaged' ? 'Hư hỏng' : 'Thanh lý'}
-                                                                </span>
-                                                            </div>
-                                                            {/* Hiển thị thông tin người mượn */}
-                                                            {copy.borrower && (
-                                                                <div className="text-right text-gray-600">
-                                                                    <span className="font-medium text-gray-900">{copy.borrower.name}</span>
-                                                                    {copy.borrower.phone && <span className="ml-2">{copy.borrower.phone}</span>}
-                                                                    <span className="ml-2 text-yellow-600">
-                                                                        Hạn: {new Date(copy.borrower.due_date).toLocaleDateString('vi-VN')}
+                                                        <div key={copy.id} className="p-2 bg-white rounded-lg text-xs border border-gray-200">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-mono text-gray-600">#{copy.copy_number}</span>
+                                                                    <span className={`px-2 py-0.5 rounded-full ${copy.status === 'available' ? 'bg-green-100 text-green-700' :
+                                                                        copy.status === 'borrowed' ? 'bg-yellow-100 text-yellow-700' :
+                                                                            copy.status === 'damaged' ? 'bg-red-100 text-red-700' :
+                                                                                'bg-gray-100 text-gray-700'
+                                                                        }`}>
+                                                                        {copy.status === 'available' ? 'Có sẵn' :
+                                                                            copy.status === 'borrowed' ? 'Đang mượn' :
+                                                                                copy.status === 'damaged' ? 'Hư hỏng' : 'Thanh lý'}
                                                                     </span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    {/* Hiển thị thông tin người mượn */}
+                                                                    {copy.borrower && (
+                                                                        <div className="text-right text-gray-600 mr-2">
+                                                                            <span className="font-medium text-gray-900">{copy.borrower.name}</span>
+                                                                            {copy.borrower.phone && <span className="ml-1">{copy.borrower.phone}</span>}
+                                                                            <span className="ml-1 text-yellow-600">
+                                                                                Hạn: {new Date(copy.borrower.due_date).toLocaleDateString('vi-VN')}
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+                                                                    {/* Nút sửa trạng thái */}
+                                                                    {copy.status !== 'borrowed' && (
+                                                                        <button
+                                                                            onClick={() => setEditingCopy({ copyId: copy.id, status: copy.status, notes: copy.condition_notes || '' })}
+                                                                            className="p-1 hover:bg-gray-100 rounded"
+                                                                            title="Sửa trạng thái"
+                                                                        >
+                                                                            <HiOutlinePencil className="w-3 h-3 text-gray-500" />
+                                                                        </button>
+                                                                    )}
+                                                                    {/* Nút xóa */}
+                                                                    {copy.status === 'available' && (
+                                                                        <button
+                                                                            onClick={() => handleRemoveCopy(copy.id)}
+                                                                            className="p-1 hover:bg-red-100 rounded"
+                                                                            title="Xóa bản này"
+                                                                        >
+                                                                            <HiOutlineMinus className="w-3 h-3 text-red-600" />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            {/* Form sửa trạng thái */}
+                                                            {editingCopy?.copyId === copy.id && (
+                                                                <div className="mt-2 pt-2 border-t border-gray-200 space-y-2">
+                                                                    <select
+                                                                        value={editingCopy.status}
+                                                                        onChange={(e) => setEditingCopy(prev => ({ ...prev, status: e.target.value }))}
+                                                                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                                                        disabled={loading}
+                                                                    >
+                                                                        <option value="available">Có sẵn</option>
+                                                                        <option value="damaged">Hư hỏng</option>
+                                                                        <option value="disposed">Thanh lý</option>
+                                                                    </select>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={editingCopy.notes}
+                                                                        onChange={(e) => setEditingCopy(prev => ({ ...prev, notes: e.target.value }))}
+                                                                        placeholder="Ghi chú (tùy chọn)"
+                                                                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                                                        disabled={loading}
+                                                                    />
+                                                                    <div className="flex gap-1">
+                                                                        <button
+                                                                            onClick={() => handleUpdateCopyStatus(copy.id, editingCopy.status, editingCopy.notes)}
+                                                                            disabled={loading}
+                                                                            className="flex-1 px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                                                                        >
+                                                                            Lưu
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => setEditingCopy(null)}
+                                                                            disabled={loading}
+                                                                            className="flex-1 px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                                                                        >
+                                                                            Hủy
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -268,28 +359,16 @@ const BookDetailModal = ({ isOpen, onClose, book, onBorrow, onUpdate }) => {
                                                 {!isManaging ? (
                                                     <div className="flex items-center gap-2">
                                                         <button
-                                                            onClick={() => setManageQuantity({ editionId: edition.id, quantity: 1 })}
+                                                            onClick={() => {
+                                                                // Lấy giá từ copy đầu tiên nếu có, nếu không thì dùng giá mặc định
+                                                                const defaultPrice = copies.length > 0 && copies[0].price ? copies[0].price : 50000;
+                                                                setManageQuantity({ editionId: edition.id, quantity: 1, price: defaultPrice });
+                                                            }}
                                                             className="flex-1 px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors flex items-center justify-center gap-1"
                                                         >
                                                             <HiOutlinePlus className="w-3 h-3" />
                                                             Thêm bản
                                                         </button>
-                                                        {copies.length > 0 && (
-                                                            <button
-                                                                onClick={() => {
-                                                                    // Xóa bản sách available đầu tiên
-                                                                    const copyToDelete = availableCopies[0] || copies[0];
-                                                                    if (copyToDelete) {
-                                                                        handleRemoveCopy(copyToDelete.id);
-                                                                    }
-                                                                }}
-                                                                disabled={loading || copies.length === 0}
-                                                                className="flex-1 px-3 py-1.5 text-xs bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
-                                                            >
-                                                                <HiOutlineMinus className="w-3 h-3" />
-                                                                Bớt bản
-                                                            </button>
-                                                        )}
                                                     </div>
                                                 ) : (
                                                     <div className="space-y-2">
@@ -299,11 +378,20 @@ const BookDetailModal = ({ isOpen, onClose, book, onBorrow, onUpdate }) => {
                                                                 min="1"
                                                                 value={manageQuantity.quantity}
                                                                 onChange={(e) => setManageQuantity(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
+                                                                className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded-lg"
+                                                                placeholder="SL"
+                                                            />
+                                                            <input
+                                                                type="number"
+                                                                min="1000"
+                                                                step="1000"
+                                                                value={manageQuantity.price}
+                                                                onChange={(e) => setManageQuantity(prev => ({ ...prev, price: parseInt(e.target.value) || 50000 }))}
                                                                 className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg"
-                                                                placeholder="Số lượng"
+                                                                placeholder="Giá (VNĐ)"
                                                             />
                                                             <button
-                                                                onClick={() => handleAddCopies(edition.id, manageQuantity.quantity)}
+                                                                onClick={() => handleAddCopies(edition.id, manageQuantity.quantity, manageQuantity.price)}
                                                                 disabled={loading}
                                                                 className="px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                                                             >
@@ -316,6 +404,9 @@ const BookDetailModal = ({ isOpen, onClose, book, onBorrow, onUpdate }) => {
                                                                 Hủy
                                                             </button>
                                                         </div>
+                                                        <p className="text-xs text-gray-500">
+                                                            Giá hiện tại: {copies[0]?.price ? `${copies[0].price.toLocaleString('vi-VN')} VNĐ` : 'Chưa có'}
+                                                        </p>
                                                     </div>
                                                 )}
                                             </div>
@@ -340,8 +431,8 @@ const BookDetailModal = ({ isOpen, onClose, book, onBorrow, onUpdate }) => {
                     <div className="pt-4 border-t border-gray-200">
                         <button
                             onClick={() => {
+                                // Chỉ gọi onBorrow - callback này sẽ đóng modal chi tiết và mở modal mượn
                                 onBorrow(book);
-                                onClose();
                             }}
                             className="w-full px-4 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
                         >

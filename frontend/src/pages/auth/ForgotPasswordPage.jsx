@@ -106,18 +106,23 @@ const ForgotPasswordPage = () => {
                             )}
 
                             {/* Email Field */}
-                            <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3 flex items-center">
-                                <HiOutlineMail className="w-5 h-5 text-gray-400 mr-2" />
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Email của bạn"
-                                    className="flex-1 bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
-                                    autoComplete="email"
-                                    disabled={loading}
-                                    required
-                                />
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Email
+                                </label>
+                                <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3 flex items-center">
+                                    <HiOutlineMail className="w-5 h-5 text-gray-400 mr-2" />
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="Email của bạn"
+                                        className="flex-1 bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
+                                        autoComplete="email"
+                                        disabled={loading}
+                                        required
+                                    />
+                                </div>
                             </div>
 
                             {/* Submit Button */}
@@ -204,16 +209,21 @@ const ForgotPasswordPage = () => {
                             )}
 
                             {/* Email Field */}
-                            <div className="bg-white border border-[#3D3D3D] rounded-xl px-4 py-3 flex items-center">
-                                <HiOutlineMail className="w-5 h-5 text-gray-400 mr-2" />
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Email của bạn"
-                                    className="flex-1 bg-transparent text-gray-700 placeholder:text-[#727272] outline-none"
-                                    required
-                                />
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Email
+                                </label>
+                                <div className="bg-white border border-[#3D3D3D] rounded-xl px-4 py-3 flex items-center">
+                                    <HiOutlineMail className="w-5 h-5 text-gray-400 mr-2" />
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="Email của bạn"
+                                        className="flex-1 bg-transparent text-gray-700 placeholder:text-[#727272] outline-none"
+                                        required
+                                    />
+                                </div>
                             </div>
 
                             {/* Submit Button */}

@@ -80,6 +80,7 @@ const CategoryPage = () => {
             fields: [
                 { name: 'name', label: 'Tên NXB', required: true },
                 { name: 'address', label: 'Địa chỉ' },
+                { name: 'established_date', label: 'Ngày thành lập', type: 'date' },
                 { name: 'phone', label: 'Số điện thoại' },
                 { name: 'email', label: 'Email' }
             ]
@@ -263,6 +264,7 @@ const CategoryPage = () => {
                                 {activeTab === 'publishers' && (
                                     <>
                                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Địa chỉ</th>
+                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Ngày thành lập</th>
                                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Liên hệ</th>
                                     </>
                                 )}
@@ -295,6 +297,9 @@ const CategoryPage = () => {
                                         {activeTab === 'publishers' && (
                                             <>
                                                 <td className="px-6 py-4 text-sm text-gray-600">{item.address || '-'}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-600">
+                                                    {item.established_date ? new Date(item.established_date).toLocaleDateString('vi-VN') : '-'}
+                                                </td>
                                                 <td className="px-6 py-4 text-sm text-gray-600">
                                                     {item.phone && <div>{item.phone}</div>}
                                                     {item.email && <div className="text-xs text-gray-400">{item.email}</div>}

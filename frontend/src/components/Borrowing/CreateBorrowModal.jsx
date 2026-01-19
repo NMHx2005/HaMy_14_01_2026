@@ -166,13 +166,8 @@ const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
     };
 
     const handleSelectEdition = (edition, copy) => {
-        // Check if already selected
-        if (selectedBooks.find(b => b.copyId === copy.id)) {
-            toast.error('Bản sách này đã được chọn');
-            return;
-        }
-
-        setSelectedBooks(prev => [...prev, {
+        // 1 phiếu = 1 sách: Thay thế sách cũ nếu có
+        setSelectedBooks([{
             copyId: copy.id,
             bookId: pendingBook.id,
             title: pendingBook.title,
@@ -183,7 +178,7 @@ const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
             copyNumber: copy.copy_number
         }]);
 
-        toast.success(`Đã thêm: ${pendingBook.title} - ${edition.publisher?.name || 'NXB'} (Bản #${copy.copy_number})`);
+        toast.success(`Đã chọn: ${pendingBook.title} - ${edition.publisher?.name || 'NXB'} (Bản #${copy.copy_number})`);
         setShowEditionModal(false);
         setPendingBook(null);
         setEditions([]);
@@ -205,7 +200,7 @@ const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
             return;
         }
         if (selectedBooks.length === 0) {
-            toast.error('Vui lòng chọn ít nhất 1 cuốn sách');
+            toast.error('Vui lòng chọn 1 cuốn sách');
             return;
         }
         if (!dueDate) {
@@ -270,6 +265,12 @@ const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
         const today = new Date();
         today.setDate(today.getDate() + 1);
         return today.toISOString().split('T')[0];
+    };
+
+    const getMaxDate = () => {
+        const maxDate = new Date();
+        maxDate.setDate(maxDate.getDate() + maxBorrowDays);
+        return maxDate.toISOString().split('T')[0];
     };
 
     return (
@@ -413,9 +414,12 @@ const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
 
                     {/* Selected Books */}
                     <div>
-                        <p className="text-sm font-medium text-gray-700 mb-2">
-                            Sách đã chọn ({selectedBooks.length})
-                        </p>
+                        <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm font-medium text-gray-700">
+                                Sách đã chọn ({selectedBooks.length}/1)
+                            </p>
+                            <p className="text-xs text-gray-500 italic">1 phiếu = 1 sách</p>
+                        </div>
                         {selectedBooks.length > 0 ? (
                             <div className="space-y-2">
                                 {selectedBooks.map((book) => (
@@ -501,8 +505,10 @@ const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
                             value={dueDate}
                             onChange={(e) => setDueDate(e.target.value)}
                             min={getMinDate()}
+                            max={getMaxDate()}
                             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
                         />
+                        <p className="text-xs text-gray-500 mt-1">Tối đa: {maxBorrowDays} ngày kể từ hôm nay</p>
                     </div>
 
                     {/* Notes */}

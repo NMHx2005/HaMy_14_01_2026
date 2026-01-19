@@ -103,40 +103,50 @@ const LoginPage = () => {
                         )}
 
                         {/* Username Field */}
-                        <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3 flex items-center">
-                            <input
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Tên đăng nhập"
-                                className="flex-1 bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
-                                autoComplete="username"
-                                disabled={loading}
-                            />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Tên đăng nhập
+                            </label>
+                            <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3 flex items-center">
+                                <input
+                                    type="text"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    placeholder="Tên đăng nhập"
+                                    className="flex-1 bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
+                                    autoComplete="username"
+                                    disabled={loading}
+                                />
+                            </div>
                         </div>
 
                         {/* Password Field */}
-                        <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3 flex items-center">
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Mật khẩu"
-                                className="flex-1 bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
-                                autoComplete="current-password"
-                                disabled={loading}
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="ml-2 text-gray-400 hover:text-gray-600"
-                            >
-                                {showPassword ? (
-                                    <HiOutlineEyeOff className="w-5 h-5" />
-                                ) : (
-                                    <HiOutlineEye className="w-5 h-5" />
-                                )}
-                            </button>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Mật khẩu
+                            </label>
+                            <div className="bg-white border border-gray-300 rounded-[12px] px-4 py-3 flex items-center">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Mật khẩu"
+                                    className="flex-1 bg-transparent text-gray-700 placeholder:text-[#727272] outline-none text-base"
+                                    autoComplete="current-password"
+                                    disabled={loading}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="ml-2 text-gray-400 hover:text-gray-600"
+                                >
+                                    {showPassword ? (
+                                        <HiOutlineEyeOff className="w-5 h-5" />
+                                    ) : (
+                                        <HiOutlineEye className="w-5 h-5" />
+                                    )}
+                                </button>
+                            </div>
                         </div>
 
                         {/* Forgot Password Link */}

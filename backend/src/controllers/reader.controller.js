@@ -27,7 +27,7 @@ const { Op } = require('sequelize');
  * @access  Admin, Librarian
  */
 const getReaders = asyncHandler(async (req, res) => {
-    const { keyword, status, page = 1, limit = 10 } = req.query;
+    const { keyword, status, account_status, page = 1, limit = 10 } = req.query;
 
     const where = {};
 
@@ -50,16 +50,24 @@ const getReaders = asyncHandler(async (req, res) => {
         includeLibraryCard.required = true;
     }
 
+    // Include Account với filter theo account_status
+    const includeAccount = {
+        model: Account,
+        as: 'account',
+        attributes: ['id', 'username', 'email', 'status'],
+        required: account_status ? true : false
+    };
+
+    if (account_status) {
+        includeAccount.where = { status: account_status };
+    }
+
     const offset = (page - 1) * limit;
 
     const { count, rows } = await Reader.findAndCountAll({
         where,
         include: [
-            {
-                model: Account,
-                as: 'account',
-                attributes: ['id', 'username', 'email', 'status']
-            },
+            includeAccount,
             includeLibraryCard
         ],
         order: [['full_name', 'ASC']],
@@ -257,6 +265,10 @@ const updateReader = asyncHandler(async (req, res) => {
  * @desc    Khóa tài khoản độc giả
  * @route   PUT /api/readers/:id/lock
  * @access  Admin, Librarian
+ * 
+ * Lưu ý: Khi khóa tài khoản, thẻ thư viện cũng tự động bị khóa (không cần validate điều kiện).
+ * Đây là hành động khóa toàn bộ, khác với lockLibraryCard() chỉ khóa thẻ riêng biệt.
+ * Nếu cần khóa thẻ với validation đầy đủ, sử dụng PUT /api/library-cards/:id/lock
  */
 const lockReader = asyncHandler(async (req, res) => {
     const reader = await Reader.findByPk(req.params.id, {
@@ -270,7 +282,7 @@ const lockReader = asyncHandler(async (req, res) => {
     // Khóa tài khoản
     await reader.account.update({ status: 'locked' });
 
-    // Khóa thẻ thư viện (nếu có)
+    // Khóa thẻ thư viện (nếu có) - Không cần validate vì đây là khóa toàn bộ tài khoản
     if (reader.libraryCard) {
         await reader.libraryCard.update({ status: 'locked' });
     }
@@ -312,40 +324,12 @@ const unlockReader = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Xóa vĩnh viễn độc giả
+ * @desc    Xóa vĩnh viễn độc giả - DISABLED
  * @route   DELETE /api/readers/:id
- * @access  Admin only
+ * @access  KHÔNG CHO PHÉP - Trả về lỗi
  */
 const deleteReader = asyncHandler(async (req, res) => {
-    const reader = await Reader.findByPk(req.params.id, {
-        include: [{ model: LibraryCard, as: 'libraryCard' }]
-    });
-
-    if (!reader) {
-        throw new AppError('Không tìm thấy độc giả', 404);
-    }
-
-    // Kiểm tra có phiếu mượn chưa trả không
-    if (reader.libraryCard) {
-        const activeBorrows = await BorrowRequest.count({
-            where: {
-                library_card_id: reader.libraryCard.id,
-                status: { [Op.in]: ['pending', 'approved', 'borrowed'] }
-            }
-        });
-
-        if (activeBorrows > 0) {
-            throw new AppError('Không thể xóa. Độc giả còn phiếu mượn chưa xử lý', 400);
-        }
-    }
-
-    // Xóa account (cascade sẽ xóa reader)
-    await Account.destroy({ where: { id: reader.account_id } });
-
-    res.json({
-        success: true,
-        message: 'Xóa độc giả thành công'
-    });
+    throw new AppError('Không cho phép xóa tài khoản người dùng. Vui lòng khóa tài khoản nếu cần thiết.', 403);
 });
 
 // ===================================================================
@@ -499,6 +483,149 @@ const renewLibraryCard = asyncHandler(async (req, res) => {
     });
 });
 
+/**
+ * @desc    Khóa thẻ thư viện
+ * @route   PUT /api/library-cards/:id/lock
+ * @access  Admin, Librarian
+ * 
+ * Điều kiện khóa:
+ * - Thẻ chưa hết hạn
+ * - Không có phiếu mượn đang xử lý (pending, approved) hoặc đang mượn (borrowed)
+ *   NHƯNG cho phép khóa nếu chỉ có phiếu mượn quá hạn (overdue)
+ * - Thẻ đang ở trạng thái hoạt động
+ */
+const lockLibraryCard = asyncHandler(async (req, res) => {
+    const libraryCard = await LibraryCard.findByPk(req.params.id);
+
+    if (!libraryCard) {
+        throw new AppError('Không tìm thấy thẻ thư viện', 404);
+    }
+
+    // Kiểm tra thẻ còn hạn
+    if (libraryCard.status === 'expired' || new Date(libraryCard.expiry_date) < new Date()) {
+        throw new AppError('Không thể khóa thẻ đã hết hạn', 400);
+    }
+
+    // Kiểm tra thẻ đang hoạt động
+    if (libraryCard.status !== 'active') {
+        throw new AppError('Chỉ có thể khóa thẻ đang hoạt động', 400);
+    }
+
+    // Kiểm tra phiếu mượn
+    const activeBorrows = await BorrowRequest.count({
+        where: {
+            library_card_id: libraryCard.id,
+            status: { [Op.in]: ['pending', 'approved', 'borrowed'] }
+        }
+    });
+
+    if (activeBorrows > 0) {
+        throw new AppError('Không thể khóa thẻ vì còn sách đang mượn. Chỉ có thể khóa nếu sách đã quá hạn.', 400);
+    }
+
+    await libraryCard.update({ status: 'locked' });
+
+    res.json({
+        success: true,
+        message: 'Khóa thẻ thành công'
+    });
+});
+
+/**
+ * @desc    Mở khóa thẻ thư viện
+ * @route   PUT /api/library-cards/:id/unlock
+ * @access  Admin, Librarian
+ */
+const unlockLibraryCard = asyncHandler(async (req, res) => {
+    const libraryCard = await LibraryCard.findByPk(req.params.id);
+
+    if (!libraryCard) {
+        throw new AppError('Không tìm thấy thẻ thư viện', 404);
+    }
+
+    // Chỉ mở khóa nếu thẻ còn hạn
+    if (new Date(libraryCard.expiry_date) > new Date()) {
+        await libraryCard.update({ status: 'active' });
+    } else {
+        await libraryCard.update({ status: 'expired' });
+    }
+
+    res.json({
+        success: true,
+        message: 'Mở khóa thẻ thành công'
+    });
+});
+
+/**
+ * @desc    Lấy danh sách sách đang mượn của độc giả
+ * @route   GET /api/readers/:id/borrowed-books
+ * @access  Admin, Librarian, Reader (self)
+ */
+const getReaderBorrowedBooks = asyncHandler(async (req, res) => {
+    const readerId = req.params.id;
+
+    // Kiểm tra quyền
+    if (req.user.role === 'reader') {
+        if (!req.user.reader || req.user.reader.id !== parseInt(readerId)) {
+            throw new AppError('Bạn không có quyền xem thông tin này', 403);
+        }
+    }
+
+    const reader = await Reader.findByPk(readerId, {
+        include: [{ model: LibraryCard, as: 'libraryCard' }]
+    });
+
+    if (!reader || !reader.libraryCard) {
+        return res.json({ success: true, data: [] });
+    }
+
+    // Lấy phiếu mượn đang borrowed hoặc overdue
+    const BorrowDetail = require('../models').BorrowDetail;
+    const BookCopy = require('../models').BookCopy;
+    const BookEdition = require('../models').BookEdition;
+    const Book = require('../models').Book;
+
+    const borrowRequests = await BorrowRequest.findAll({
+        where: {
+            library_card_id: reader.libraryCard.id,
+            status: { [Op.in]: ['borrowed', 'overdue'] }
+        },
+        include: [{
+            model: BorrowDetail,
+            as: 'details',
+            where: { actual_return_date: null },
+            required: true,
+            include: [{
+                model: BookCopy,
+                as: 'bookCopy',
+                include: [{
+                    model: BookEdition,
+                    as: 'bookEdition',
+                    include: [{ model: Book, as: 'book' }]
+                }]
+            }]
+        }]
+    });
+
+    // Transform data
+    const borrowedBooks = [];
+    borrowRequests.forEach(req => {
+        req.details.forEach(detail => {
+            borrowedBooks.push({
+                borrow_request_id: req.id,
+                borrow_date: req.borrow_date,
+                due_date: req.due_date,
+                status: req.status,
+                book_title: detail.bookCopy?.bookEdition?.book?.title,
+                book_code: detail.bookCopy?.bookEdition?.book?.code,
+                copy_id: detail.book_copy_id
+            });
+        });
+    });
+
+    res.json({ success: true, data: borrowedBooks });
+});
+
 module.exports = {
     // Reader
     getReaders,
@@ -508,9 +635,12 @@ module.exports = {
     lockReader,
     unlockReader,
     deleteReader,
+    getReaderBorrowedBooks,
 
     // Library Card
     createLibraryCard,
     updateLibraryCard,
-    renewLibraryCard
+    renewLibraryCard,
+    lockLibraryCard,
+    unlockLibraryCard
 };

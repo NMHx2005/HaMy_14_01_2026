@@ -38,4 +38,18 @@ router.put('/:id', authenticate, staffOnly, updateLibraryCardValidator, validate
  */
 router.put('/:id/renew', authenticate, staffOnly, idParamValidator, validate, readerController.renewLibraryCard);
 
+/**
+ * @route   PUT /api/library-cards/:id/lock
+ * @desc    Khóa thẻ thư viện
+ * @access  Admin, Librarian
+ */
+router.put('/:id/lock', authenticate, staffOnly, idParamValidator, validate, readerController.lockLibraryCard);
+
+/**
+ * @route   PUT /api/library-cards/:id/unlock
+ * @desc    Mở khóa thẻ thư viện
+ * @access  Admin, Librarian
+ */
+router.put('/:id/unlock', authenticate, staffOnly, idParamValidator, validate, readerController.unlockLibraryCard);
+
 module.exports = router;

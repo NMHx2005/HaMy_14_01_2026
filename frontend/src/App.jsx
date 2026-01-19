@@ -21,6 +21,8 @@ import {
   VerifyEmailPage,
   DashboardPage,
   BorrowingPage,
+  BorrowPage,
+  ReturnPage,
   BooksPage,
   MembersPage,
   FinancePage,
@@ -81,10 +83,17 @@ function App() {
             <Route path="/profile" element={<ProfilePage />} />
 
             {/* ===== STAFF ROUTES (Admin/Librarian) ===== */}
-            {/* Mượn trả */}
-            <Route path="/borrowing" element={
+            {/* Mượn sách */}
+            <Route path="/borrow" element={
               <ProtectedRoute roles={['admin', 'librarian']}>
-                <BorrowingPage />
+                <BorrowPage />
+              </ProtectedRoute>
+            } />
+            
+            {/* Trả sách */}
+            <Route path="/return" element={
+              <ProtectedRoute roles={['admin', 'librarian']}>
+                <ReturnPage />
               </ProtectedRoute>
             } />
 

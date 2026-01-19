@@ -320,6 +320,56 @@ const createBorrowRequest = asyncHandler(async (req, res) => {
         throw new AppError('Ngày trả phải sau ngày hôm nay', 400);
     }
 
+    // Validation: 1 phiếu = 1 sách
+    if (!book_copy_ids || book_copy_ids.length !== 1) {
+        throw new AppError('Mỗi phiếu mượn chỉ được chọn 1 cuốn sách', 400);
+    }
+
+    // Validation: 1 quyển chỉ mượn 1 NXB (không cho mượn cùng đầu sách từ NXB khác)
+    // Lấy thông tin copy được chọn
+    const selectedCopy = await BookCopy.findByPk(book_copy_ids[0], {
+        include: [{
+            model: BookEdition,
+            as: 'bookEdition',
+            include: [{ model: require('../models').Book, as: 'book' }]
+        }]
+    });
+
+    if (!selectedCopy) {
+        throw new AppError('Không tìm thấy bản sách', 404);
+    }
+
+    const selectedBookId = selectedCopy.bookEdition?.book_id;
+
+    // Kiểm tra xem độc giả đã mượn/đang chờ duyệt đầu sách này chưa
+    const existingBorrowOfSameBook = await BorrowRequest.findOne({
+        where: {
+            library_card_id: cardId,
+            status: { [Op.in]: ['pending', 'approved', 'borrowed'] }
+        },
+        include: [{
+            model: BorrowDetail,
+            as: 'details',
+            where: { actual_return_date: null },
+            required: true,
+            include: [{
+                model: BookCopy,
+                as: 'bookCopy',
+                required: true,
+                include: [{
+                    model: BookEdition,
+                    as: 'bookEdition',
+                    where: { book_id: selectedBookId },
+                    required: true
+                }]
+            }]
+        }]
+    });
+
+    if (existingBorrowOfSameBook) {
+        throw new AppError('Bạn đã mượn/đang chờ duyệt đầu sách này. Không thể mượn thêm từ NXB khác.', 400);
+    }
+
     // Kiểm tra số sách đang mượn
     const currentBorrowed = await BorrowDetail.count({
         include: [{

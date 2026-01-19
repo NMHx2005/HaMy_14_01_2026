@@ -149,8 +149,7 @@ Thư viện BookWorm`
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {/* Card 1 - Người dùng quá hạn */}
+            {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div className="relative bg-white rounded-xl border-l-4 border-red-500 shadow-sm p-5 overflow-hidden group hover:shadow-md transition-all">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-red-50 rounded-bl-full -mr-12 -mt-12"></div>
                     <div className="relative">
@@ -175,7 +174,6 @@ Thư viện BookWorm`
                     </div>
                 </div>
 
-                {/* Card 2 - Đã chọn */}
                 <div className="relative bg-white rounded-xl border-l-4 border-blue-500 shadow-sm p-5 overflow-hidden group hover:shadow-md transition-all">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-12 -mt-12"></div>
                     <div className="relative">
@@ -200,7 +198,6 @@ Thư viện BookWorm`
                     </div>
                 </div>
 
-                {/* Card 3 - Tổng sách quá hạn */}
                 <div className="relative bg-white rounded-xl border-l-4 border-purple-500 shadow-sm p-5 overflow-hidden group hover:shadow-md transition-all">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-bl-full -mr-12 -mt-12"></div>
                     <div className="relative">
@@ -226,7 +223,7 @@ Thư viện BookWorm`
                         )}
                     </div>
                 </div>
-            </div>
+            </div> */}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* User List */}
@@ -264,15 +261,15 @@ Thư viện BookWorm`
                                         key={user.id}
                                         onClick={() => toggleSelectUser(user.id)}
                                         className={`p-4 cursor-pointer transition-all hover:bg-gray-50 ${selectedUsers.includes(user.id)
-                                                ? 'bg-purple-50 border-l-4 border-purple-500'
-                                                : 'border-l-4 border-transparent'
+                                            ? 'bg-purple-50 border-l-4 border-purple-500'
+                                            : 'border-l-4 border-transparent'
                                             }`}
                                     >
                                         <div className="flex items-start gap-3">
                                             {/* Checkbox */}
                                             <div className={`w-5 h-5 rounded border-2 flex items-center justify-center mt-1 transition-colors ${selectedUsers.includes(user.id)
-                                                    ? 'bg-purple-500 border-purple-500'
-                                                    : 'border-gray-300'
+                                                ? 'bg-purple-500 border-purple-500'
+                                                : 'border-gray-300'
                                                 }`}>
                                                 {selectedUsers.includes(user.id) && (
                                                     <HiOutlineCheck className="w-3 h-3 text-white" />
