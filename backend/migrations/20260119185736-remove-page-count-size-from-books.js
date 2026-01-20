@@ -10,7 +10,7 @@ module.exports = {
     up: async (queryInterface, Sequelize) => {
         await queryInterface.removeColumn('books', 'page_count');
         await queryInterface.removeColumn('books', 'size');
-    },
+  },
 
     down: async (queryInterface, Sequelize) => {
         await queryInterface.addColumn('books', 'page_count', {
@@ -23,5 +23,5 @@ module.exports = {
             allowNull: true,
             comment: 'Khổ sách (VD: 14x20cm)'
         });
-    }
+  }
 };

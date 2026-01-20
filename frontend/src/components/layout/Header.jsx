@@ -49,9 +49,9 @@ const Header = () => {
     };
 
     return (
-        // Header container: height 71px theo Figma
+        // Header container: height 71px theo Figma, sticky khi scroll
         <header
-            className="bg-white flex items-center justify-between px-5"
+            className="bg-white flex items-center justify-between px-5 sticky top-0 z-50 shadow-sm"
             style={{ height: '71px' }}
         >
             {/* ===== LEFT SECTION: User Info ===== */}

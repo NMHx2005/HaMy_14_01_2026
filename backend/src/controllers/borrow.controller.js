@@ -342,7 +342,22 @@ const createBorrowRequest = asyncHandler(async (req, res) => {
     const selectedBookId = selectedCopy.bookEdition?.book_id;
 
     // Kiểm tra xem độc giả đã mượn/đang chờ duyệt đầu sách này chưa
-    const existingBorrowOfSameBook = await BorrowRequest.findOne({
+    // Tách query thành 2 bước để tránh lỗi nested include với alias
+    // Bước 1: Tìm tất cả book_copy_ids thuộc đầu sách này
+    const editionsOfSameBook = await BookEdition.findAll({
+        where: { book_id: selectedBookId },
+        attributes: ['id']
+    });
+    const editionIds = editionsOfSameBook.map(e => e.id);
+    
+    const copiesOfSameBook = await BookCopy.findAll({
+        where: { book_edition_id: { [Op.in]: editionIds } },
+        attributes: ['id']
+    });
+    const copyIdsOfSameBook = copiesOfSameBook.map(c => c.id);
+
+    // Bước 2: Kiểm tra xem có BorrowDetail nào đang mượn các copy này không
+    const existingBorrowOfSameBook = copyIdsOfSameBook.length > 0 ? await BorrowRequest.findOne({
         where: {
             library_card_id: cardId,
             status: { [Op.in]: ['pending', 'approved', 'borrowed'] }
@@ -350,21 +365,13 @@ const createBorrowRequest = asyncHandler(async (req, res) => {
         include: [{
             model: BorrowDetail,
             as: 'details',
-            where: { actual_return_date: null },
-            required: true,
-            include: [{
-                model: BookCopy,
-                as: 'bookCopy',
-                required: true,
-                include: [{
-                    model: BookEdition,
-                    as: 'bookEdition',
-                    where: { book_id: selectedBookId },
-                    required: true
-                }]
-            }]
+            where: {
+                actual_return_date: null,
+                book_copy_id: { [Op.in]: copyIdsOfSameBook }
+            },
+            required: true
         }]
-    });
+    }) : null;
 
     if (existingBorrowOfSameBook) {
         throw new AppError('Bạn đã mượn/đang chờ duyệt đầu sách này. Không thể mượn thêm từ NXB khác.', 400);

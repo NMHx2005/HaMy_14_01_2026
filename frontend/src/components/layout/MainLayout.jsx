@@ -24,7 +24,7 @@ const MainLayout = () => {
 
             {/* ===== MAIN CONTENT AREA ===== */}
             {/* margin-left: 16rem (256px) để khớp với sidebar width */}
-            <div style={{ marginLeft: '16rem' }} className="min-h-screen w-[calc(100%-16rem)] overflow-x-hidden">
+            <div style={{ marginLeft: '16rem' }} className="h-screen w-[calc(100%-16rem)] overflow-y-auto overflow-x-hidden">
                 {/* Header */}
                 <Header />
 
